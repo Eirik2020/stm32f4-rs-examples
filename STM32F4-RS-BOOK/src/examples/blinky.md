@@ -58,8 +58,7 @@ let ms: u32 = 8_000;
 ## Complete Example
 Here is a complete code example, it is the default example, and can be run with:
 ```sh
-$ cargo build --example blinky
-$ cargo embed
+$ cargo embed --example blinky
 ```
 
 ```rust

@@ -16,7 +16,7 @@ use defmt_rtt as _;         // Global logger
 #[allow(clippy::empty_loop)] 
 #[entry] 
 fn main() -> ! {
-    info!("Use cargo build --example <example name>, to build examples!");
+    info!("Use cargo embed --example <example name>, to build examples!");
 
     loop {}
 }
