@@ -1,0 +1,4 @@
+[template]
+description = "Embedded Rust template for STM32F4 with defmt and probe-rs"
+rename = "true"
+authors = ["Your Name <your@email.com>"]

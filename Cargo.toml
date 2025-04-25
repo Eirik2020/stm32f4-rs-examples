@@ -1,0 +1,29 @@
+[package]
+name = "stm32f4-rs-examples"
+version = "0.1.0"
+authors = ["Eirik Kaldhol Strandman <63415376+Eirik2020@users.noreply.github.com>"]
+edition = "2024"
+
+[dependencies]
+cortex-m = "0.7"
+cortex-m-rt = "0.7"
+defmt = "1.0.1"
+defmt-rtt = "1.0.0"
+panic-probe = { version = "1.0.0", features = ["print-defmt"] }
+
+[dependencies.stm32f4xx-hal]
+version = "0.22.1"
+features = ["stm32f401", "defmt"]
+
+
+
+# Set the default for dependencies.
+[profile.dev.package."*"]
+opt-level = "s"
+
+[profile.release]
+codegen-units = 1
+incremental = false
+debug = true
+lto = true
+opt-level = "s"
