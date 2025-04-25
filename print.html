@@ -156,7 +156,10 @@
 
                 <div id="content" class="content">
                     <main>
-                        <div style="break-before: page; page-break-before: always;"></div><h1 id="set-up"><a class="header" href="#set-up">Set-up</a></h1>
+                        <h1 id="introduction"><a class="header" href="#introduction">Introduction</a></h1>
+<p>Oh lordy</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="set-up"><a class="header" href="#set-up">Set-up</a></h1>
+<p>Have mercy</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="blinky"><a class="header" href="#blinky">Blinky</a></h1>
 <p>Blinky will be our first attempt at using the STM32F4 HAL crate. We use this crate to access the peripherals of the STM32, safely wrapped in rust.</p>
 <p>From the STM32F4 HAL we import the Peripheral Access Crate (PAC) and the preludes. The preludes import some generics and traits for embedded HAL that saves us some typing.
@@ -214,8 +217,7 @@ let ms: u32 = 8_000;
 <span class="boring">}</span></code></pre></pre>
 <h2 id="complete-example"><a class="header" href="#complete-example">Complete Example</a></h2>
 <p>Here is a complete code example, it is the default example, and can be run with:</p>
-<pre><code class="language-sh">$ cargo build --example blinky
-$ cargo embed
+<pre><code class="language-sh">$ cargo embed --example blinky
 </code></pre>
 <pre><pre class="playground"><code class="language-rust">// ========================== Embedded Rust Set-up ==========================
 #![deny(unsafe_code)]
@@ -378,8 +380,7 @@ let ms: u32 = 8_000;
 <span class="boring">}</span></code></pre></pre>
 <h2 id="complete-example-2"><a class="header" href="#complete-example-2">Complete Example</a></h2>
 <p>Here is a complete code example, it is the default example, and can be run with:</p>
-<pre><code class="language-sh">$ cargo build --example blinky
-$ cargo embed
+<pre><code class="language-sh">$ cargo embed --example blinky
 </code></pre>
 <pre><pre class="playground"><code class="language-rust">// ========================== Embedded Rust Set-up ==========================
 #![deny(unsafe_code)]
