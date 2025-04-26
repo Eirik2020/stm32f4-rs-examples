@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Hello World! - Embedded Rust on the STM32F4 for dummies</title>
+        <title>PWM Light Dimmer - Embedded Rust on the STM32F4 for dummies</title>
 
 
         <!-- Custom HTML head -->
@@ -155,71 +155,148 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="hello-world-in-embedded-rust"><a class="header" href="#hello-world-in-embedded-rust">Hello World! In embedded rust!</a></h1>
-<p>To print hello world to the user, we need a way to send serial messages, in this case we use the debugger probe-rs with defmt. You might say, but what about other debuggers like GBD or openOCD?
-My answer is no, here we are going full rust, or get scuffed.</p>
-<p>Add the debugger to our dependencies in <code>Cargo.toml</code>:</p>
-<pre><code class="language-toml">Cargo.toml
-[dependencies]
-defmt = "1.0.1"
-defmt-rtt = "1.0.0"
-panic-probe = { version = "1.0.0", features = ["print-defmt"] }
-</code></pre>
-<p>Then we import the debugger into our main function, and use <code>info!</code> to to send a message to the terminal:</p>
-<pre><pre class="playground"><code class="language-rust">main.rs
-// Import defmt debugger
-use defmt::*;         // Debugger
-use defmt_rtt as _;   // Use defmt as global rtt logger
-use panic_probe as _; // Panic handler with defmt support
+                        <h1 id="dimming-a-led-using-pwm"><a class="header" href="#dimming-a-led-using-pwm">Dimming a LED using PWM</a></h1>
+<p>Now lets try ourselvs at something a bit more advanced. A LED that is dimmed with the help of a button.
+We will dim it using PWM, but before we can do this, we need to configure the clocks and timers, which in turn control our PWM.</p>
+<p>We give ownership of the reset and clock control to <code>rcc</code>, from <code>dp</code>.<br />
+Then configure(<code>.cfgr</code>) it from a high speed external(<code>use_hse()</code>) clock running at 8 MHz(<code>8.MHz()</code>) and lock the configuration(<code>.freeze()</code>).</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// Configure clocks
+    let rcc = dp.RCC.constrain();
+    let clocks = rcc.cfgr.use_hse(8.MHz()).freeze();
+<span class="boring">}</span></code></pre></pre>
+<p>Now to the juicy part, we actually configure one of our timers (Timer 2, TIM2) for PWM.
+To do this, we do this:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// Configure PWM
+let (_, (LD1_pwm, ..)) = dp.TIM2.pwm_hz(2000.Hz(), &amp;clocks);
+<span class="boring">}</span></code></pre></pre>
+<p>So what is going on here?<br />
+Here we take timer 2(<code>TIM2</code>) from the device peripheral handler(<code>dp</code>), and configure it for PWM with hertz as a input (<code>.pwm_hz()</code>). And set the PWM frequency to 2000 Hz (<code>.Hz()</code>), and use our on-board clock as a reference (<code>&amp;clocks</code>).<br />
+Now why do we assign it to <code>(_, (LD1_pwm, ..))</code>?<br />
+This is because it returns an array, where the first spot is the PWM controller, which we ignore with (<code>_</code>), then the second spot is all the PWM channels
+<code>(LD1_pwm, ..))</code>. The first channel is assigned to <code>LD1_pwm</code>, while we ignore the rest with <code>, ..)</code>, it would be the same as putting <code>_</code> for all the other channels.
+Can I do PWM now? No, have patience my child. We have our PWM channel, we now need to assign it to a suitable pin,
+so we assign <code>LD1_pwm</code> to pin 5 in GPIO group A (<code>pa5</code>):</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>let mut LD1_pwm = LD1_pwm.with(gpioa.pa5);
+let max_duty = LD1_pwm.get_max_duty();
+LD1_pwm.enable();
+<span class="boring">}</span></code></pre></pre>
+<p>We also use <code>.get_max_duty()</code> to get the maximum PWM value, and <code>.enable()</code> to enable the channel.</p>
+<p>Finally, we can set the PWM duty cycle for PA5, we do this with <code>.set_duty()</code>, and give it a division of <code>max_duty</code>.<br />
+In this case divided by 4 or 25% duty cycle.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>LD1_pwm.set_duty(max_duty / 4); // 25% duty for LED LD1. 
+<span class="boring">}</span></code></pre></pre>
+<p>Now lets make it even cooler. Lets have 10 levels (0-100%), controlled by a button!</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// Initialize counter variable
+    let mut counter = 0;
 
-#[entry] 
-fn main() -&gt; ! {
-    // Use info! to print a message to the terminal. 
-    info!("Hello World!");
+    // Calculate conversion factor from clock cycles to ms, assuming 8 MHz
+    let ms: u32 = 8_000;
+    
+   loop {
+    if B1.is_low() {
+        cortex_m::asm::delay(50 * ms); // debounce delay
+        if B1.is_low() {
+            counter = (counter + 1) % 11; // increment and roll over after 10 (0-10 total 11 states)
 
-    loop {}
-}</code></pre></pre>
+            // Wait until button released
+            while B1.is_high() {}
+        }
+    }
+
+    // Set PWM for LD1
+    let duty = (max_duty * counter) / 10; // 10 steps (0%, 10%, ..., 100%)
+    LD1_pwm.set_duty(duty);
+}
+<span class="boring">}</span></code></pre></pre>
+<p>Here we initialize the counter and calculate the clock-cycle to ms factor.<br />
+In the main loop we check if our button is pressed(<code>if B1.is_low()</code>), if it is, we wait for 50ms(<code>cortex_m::asm:delay(50*ms)</code>), then if it still is pressed, we increment the counter. The reason for the delay is a quick-and-dirty debounce of the button. To increment to counter from 0-10, we use this <code>counter = (counter + 1) % 11</code>. Then wait for the button to be unpressed (<code>while B1.is_high()</code>), so we don't increment more than once.</p>
+<p>Outside the loop, we calculate the desired duty cycle from the counter and apply it to our LED, LD1.</p>
 <h2 id="complete-example"><a class="header" href="#complete-example">Complete Example</a></h2>
-<p>Here is a complete code example, it is the default example, and can be run with:</p>
-<pre><code class="language-sh">$ cargo build
-$ cargo embed
+<p>Here is a complete code example and can be run with:</p>
+<pre><code class="language-sh">$ cargo embed --example pwm_dimmer
 </code></pre>
-<pre><pre class="playground"><code class="language-rust">#![deny(unsafe_code)]
+<pre><pre class="playground"><code class="language-rust">// ========================== Embedded Rust Set-up ==========================
+#![deny(unsafe_code)]
 #![no_main]
 #![no_std]
 
-// Crates
-use cortex_m_rt::entry; // ARM dependencies for cortex-m architecture
-use stm32f4xx_hal as _; // STM32F4 series HAL crate
 
-// Debugger
-use defmt::*;
-use defmt_rtt as _;     // Global logger
-use panic_probe as _;   // Panic handler with defmt support
+// Imports
+use defmt_rtt as _; // Global logger
+use panic_probe as _; // Panic handler with defmt support
+use cortex_m_rt::entry;
+use stm32f4xx_hal::{
+    pac::{self},
+    prelude::*,
+};
 
 
-// MAIN
-#[allow(clippy::empty_loop)] 
-#[entry] 
+#[allow(non_snake_case)]
+#[allow(clippy::empty_loop)]
+#[entry]
 fn main() -&gt; ! {
-    info!("Use cargo embed --example &lt;example name&gt;, to build examples!");
+    // ========================== Set-up ==========================
+    // Take ownership of device peripherals and split out GPIO group A and B
+    let dp = pac::Peripherals::take().unwrap();
+    let gpioa = dp.GPIOA.split();
+    let gpioc = dp.GPIOC.split();
 
-    loop {}
+    // Configure clocks
+    let rcc = dp.RCC.constrain();
+    let clocks = rcc.cfgr.use_hse(8.MHz()).freeze();
+
+    // Configure pins
+    let B1 = gpioc.pc13;
+
+    // Configure PWM
+    let (_, (LD1_pwm, ..)) = dp.TIM2.pwm_hz(2000.Hz(), &amp;clocks);
+    let mut LD1_pwm = LD1_pwm.with(gpioa.pa5);
+    let max_duty = LD1_pwm.get_max_duty();
+    LD1_pwm.enable();
+
+    // Initialize counter variable
+    let mut counter = 0;
+
+    // Calculate conversion factor from clock cycles to ms, assuming 8 MHz
+    let ms: u32 = 8_000;
+    
+
+   // ========================== LOOP ==========================
+   loop {
+    if B1.is_low() {
+        cortex_m::asm::delay(50 * ms); // debounce delay
+        if B1.is_low() {
+            counter = (counter + 1) % 11; // increment and roll over after 10 (0-10 total 11 states)
+
+            // Wait until button released
+            while B1.is_high() {}
+        }
+    }
+
+    // Set PWM for LD1
+    let duty = (max_duty * counter) / 10; // 10 steps (0%, 10%, ..., 100%)
+    LD1_pwm.set_duty(duty);
+}
 }</code></pre></pre>
-<p>Don't forget to have you STM32F4 connected! A terminal should open and look like this:
-<img src="../images/hello_world_terminal.png" alt="Hello World Terminal" /></p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../examples/blinky.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../examples/buten.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
 
-                            <a rel="next prefetch" href="../examples/blinky.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
-                                <i class="fa fa-angle-right"></i>
-                            </a>
 
                         <div style="clear: both"></div>
                     </nav>
@@ -227,13 +304,10 @@ fn main() -&gt; ! {
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../examples/blinky.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../examples/buten.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
 
-                    <a rel="next prefetch" href="../examples/blinky.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
-                        <i class="fa fa-angle-right"></i>
-                    </a>
             </nav>
 
         </div>

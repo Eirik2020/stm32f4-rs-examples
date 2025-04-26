@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Hello World! - Embedded Rust on the STM32F4 for dummies</title>
+        <title>Buten Controlled Light - Embedded Rust on the STM32F4 for dummies</title>
 
 
         <!-- Custom HTML head -->
@@ -155,59 +155,76 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="hello-world-in-embedded-rust"><a class="header" href="#hello-world-in-embedded-rust">Hello World! In embedded rust!</a></h1>
-<p>To print hello world to the user, we need a way to send serial messages, in this case we use the debugger probe-rs with defmt. You might say, but what about other debuggers like GBD or openOCD?
-My answer is no, here we are going full rust, or get scuffed.</p>
-<p>Add the debugger to our dependencies in <code>Cargo.toml</code>:</p>
-<pre><code class="language-toml">Cargo.toml
-[dependencies]
-defmt = "1.0.1"
-defmt-rtt = "1.0.0"
-panic-probe = { version = "1.0.0", features = ["print-defmt"] }
-</code></pre>
-<p>Then we import the debugger into our main function, and use <code>info!</code> to to send a message to the terminal:</p>
-<pre><pre class="playground"><code class="language-rust">main.rs
-// Import defmt debugger
-use defmt::*;         // Debugger
-use defmt_rtt as _;   // Use defmt as global rtt logger
-use panic_probe as _; // Panic handler with defmt support
+                        <h1 id="buten-controlled-light"><a class="header" href="#buten-controlled-light">Buten Controlled Light</a></h1>
+<p>Being able to have some inputs would be nice right?
+So lets try controlling the LED with the on-board button. Just like in the blinky example, we need to split out of peripherals. We also split out GPIO group C, since the on-board button B1, is connected to pin 13 in group C, PC13.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>    let dp = pac::Peripherals::take().unwrap();
+    let gpioa = dp.GPIOA.split();
+    let gpioc = dp.GPIOC.split();
+<span class="boring">}</span></code></pre></pre>
+<p>We then assign PC13 to B1. Notice here we don't need to declare B1 a mutable variable, since we only read data from it. (If we wanted to write to it, we had to make it mutable).<br />
+We then check if B1 is true (high) using <code>.is_low()</code>, and set our LED LD1 high if it is.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>let B1 = gpioc.pc13;
 
-#[entry] 
-fn main() -&gt; ! {
-    // Use info! to print a message to the terminal. 
-    info!("Hello World!");
-
-    loop {}
-}</code></pre></pre>
+loop {
+    // Check if button is pressed
+    if B1.is_low() {
+        LD1.set_high(); // Turn ON LED
+    } else {
+        LD1.set_low(); // Turn OFF LED
+    }
+}
+<span class="boring">}</span></code></pre></pre>
 <h2 id="complete-example"><a class="header" href="#complete-example">Complete Example</a></h2>
-<p>Here is a complete code example, it is the default example, and can be run with:</p>
-<pre><code class="language-sh">$ cargo build
-$ cargo embed
+<p>Here is a complete code example and can be run with:</p>
+<pre><code class="language-sh">$ cargo embed --example buten
 </code></pre>
-<pre><pre class="playground"><code class="language-rust">#![deny(unsafe_code)]
+<pre><pre class="playground"><code class="language-rust">// ========================== Embedded Rust Set-up ==========================
+#![deny(unsafe_code)]
 #![no_main]
 #![no_std]
 
-// Crates
-use cortex_m_rt::entry; // ARM dependencies for cortex-m architecture
-use stm32f4xx_hal as _; // STM32F4 series HAL crate
 
-// Debugger
-use defmt::*;
-use defmt_rtt as _;     // Global logger
-use panic_probe as _;   // Panic handler with defmt support
+// Imports
+use defmt_rtt as _; // Global logger
+use panic_probe as _; // Panic handler with defmt support
+use cortex_m_rt::entry;
+use stm32f4xx_hal::{
+    pac::{self},
+    prelude::*,
+};
 
 
-// MAIN
-#[allow(clippy::empty_loop)] 
-#[entry] 
+#[allow(non_snake_case)]
+#[allow(clippy::empty_loop)]
+#[entry]
 fn main() -&gt; ! {
-    info!("Use cargo embed --example &lt;example name&gt;, to build examples!");
+    // ========================== Set-up ==========================
+    // Take ownership of device peripherals and split out GPIO group A and B
+    let dp = pac::Peripherals::take().unwrap();
+    let gpioa = dp.GPIOA.split();
+    let gpioc = dp.GPIOC.split();
 
-    loop {}
+    // Configure pins
+    let mut LD1 = gpioa.pa5.into_push_pull_output();
+    LD1.set_low();
+    let B1 = gpioc.pc13;
+
+   // ========================== LOOP ==========================
+    loop {
+        // Check if button is pressed
+        if B1.is_low() {
+            LD1.set_high(); // Turn ON LED
+        } else {
+            LD1.set_low(); // Turn OFF LED
+        }
+    }
 }</code></pre></pre>
-<p>Don't forget to have you STM32F4 connected! A terminal should open and look like this:
-<img src="../images/hello_world_terminal.png" alt="Hello World Terminal" /></p>
+<p>(btw, buten is a inside joke, I am not illiterate)</p>
 
                     </main>
 
@@ -217,7 +234,7 @@ fn main() -&gt; ! {
                                 <i class="fa fa-angle-left"></i>
                             </a>
 
-                            <a rel="next prefetch" href="../examples/blinky.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../examples/pwm_dimmer.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
 
@@ -231,7 +248,7 @@ fn main() -&gt; ! {
                         <i class="fa fa-angle-left"></i>
                     </a>
 
-                    <a rel="next prefetch" href="../examples/blinky.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../examples/pwm_dimmer.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
             </nav>
