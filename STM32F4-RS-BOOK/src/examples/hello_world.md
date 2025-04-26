@@ -11,7 +11,7 @@ defmt-rtt = "1.0.0"
 panic-probe = { version = "1.0.0", features = ["print-defmt"] }
 ```
 
-Then we import the debugger into our main function, use `info!` to to send a message to the terminal:  
+Then we import the debugger into our main function, and use `info!` to to send a message to the terminal:  
 ```rust
 main.rs
 // Import defmt debugger

@@ -5,7 +5,6 @@
 
 
 // Imports
-use defmt::*;
 use defmt_rtt as _; // Global logger
 use panic_probe as _; // Panic handler with defmt support
 use cortex_m_rt::entry;
@@ -29,10 +28,6 @@ fn main() -> ! {
     let mut LD1 = gpioa.pa5.into_push_pull_output();
     LD1.set_low();
     let B1 = gpioc.pc13;
-   
-   // Debug
-   info!("Hello from defmt!");
-
 
    // ========================== LOOP ==========================
     loop {
@@ -44,4 +39,3 @@ fn main() -> ! {
         }
     }
 }
-// Hello
