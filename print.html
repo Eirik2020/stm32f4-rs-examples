@@ -159,7 +159,96 @@
                         <h1 id="introduction"><a class="header" href="#introduction">Introduction</a></h1>
 <p>Oh lordy, amam</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="set-up"><a class="header" href="#set-up">Set-up</a></h1>
-<p>Have mercy</p>
+<h2 id="software"><a class="header" href="#software">Software</a></h2>
+<p>Install the rust tool chain</p>
+<pre><code class="language-sh">rustup install stable
+rustup component add rust-src llvm-tools-preview
+</code></pre>
+<p>Install ARM Cortex-M target for STM32F4 series (Cortex-M4F with floating point unit (FPU))</p>
+<pre><code class="language-sh">rustup target add thumbv7em-none-eabihf
+</code></pre>
+<p>Install Probe-RS as our debugger probe.</p>
+<pre><code class="language-sh">cargo install probe-run
+cargo install flip-link defmt-cli
+</code></pre>
+<p>Install cargo tools for embedded use</p>
+<pre><code class="language-sh">cargo install cargo-embed
+</code></pre>
+<p>I also recommend installing the following VS Code Extentions:</p>
+<ul>
+<li>rust-analyzer</li>
+<li>probe-rs-tools</li>
+</ul>
+<h2 id="hardware"><a class="header" href="#hardware">Hardware</a></h2>
+<p>ST Nucleo F401</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="examples"><a class="header" href="#examples">Examples</a></h1>
+<p>Here is a list of examples to show how to do most basic stuff in embedded rust, like:</p>
+<ol>
+<li>Sending serial messages to your PC</li>
+<li>How to turn on or off a LED with a GPIO pin</li>
+<li>How to read the value of a button with a GPIO pin</li>
+<li>How to do pulse-width-modulation (PWM)</li>
+<li>How to read analog voltages from a potentiometer</li>
+</ol>
+<p>These examples are available on my Github Repo, <code>stm32f4-rs-examples</code>, and can be cloned with:</p>
+<pre><code class="language-sh">git clone https://github.com/Eirik2020/stm32f4-rs-examples.git
+</code></pre>
+<p>Then opened with:</p>
+<pre><code class="language-sh">code stm32f4-rs-examples
+</code></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="hello-world-in-embedded-rust"><a class="header" href="#hello-world-in-embedded-rust">Hello World! In embedded rust!</a></h1>
+<p>To print hello world to the user, we need a way to send serial messages, in this case we use the debugger probe-rs with defmt. You might say, but what about other debuggers like GBD or openOCD?
+My answer is no, here we are going full rust, or get scuffed.</p>
+<p>Add the debugger to our dependencies in <code>Cargo.toml</code>:</p>
+<pre><code class="language-toml">Cargo.toml
+[dependencies]
+defmt = "1.0.1"
+defmt-rtt = "1.0.0"
+panic-probe = { version = "1.0.0", features = ["print-defmt"] }
+</code></pre>
+<p>Then we import the debugger into our main function, and use <code>info!</code> to to send a message to the terminal:</p>
+<pre><pre class="playground"><code class="language-rust">main.rs
+// Import defmt debugger
+use defmt::*;         // Debugger
+use defmt_rtt as _;   // Use defmt as global rtt logger
+use panic_probe as _; // Panic handler with defmt support
+
+#[entry] 
+fn main() -&gt; ! {
+    // Use info! to print a message to the terminal. 
+    info!("Hello World!");
+
+    loop {}
+}</code></pre></pre>
+<h2 id="complete-example"><a class="header" href="#complete-example">Complete Example</a></h2>
+<p>Here is a complete code example, it is the default example, and can be run with:</p>
+<pre><code class="language-sh">$ cargo build
+$ cargo embed
+</code></pre>
+<pre><pre class="playground"><code class="language-rust">#![deny(unsafe_code)]
+#![no_main]
+#![no_std]
+
+// Crates
+use cortex_m_rt::entry; // ARM dependencies for cortex-m architecture
+use stm32f4xx_hal as _; // STM32F4 series HAL crate
+
+// Debugger
+use defmt::*;
+use defmt_rtt as _;     // Global logger
+use panic_probe as _;   // Panic handler with defmt support
+
+
+// MAIN
+#[allow(clippy::empty_loop)] 
+#[entry] 
+fn main() -&gt; ! {
+    info!("Use cargo embed --example &lt;example name&gt;, to build examples!");
+
+    loop {}
+}</code></pre></pre>
+<p>Don't forget to have you STM32F4 connected! A terminal should open and look like this:
+<img src="examples/../images/hello_world_terminal.png" alt="Hello World Terminal" /></p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="blinky"><a class="header" href="#blinky">Blinky</a></h1>
 <p>Blinky will be our first attempt at using the STM32F4 HAL crate. We use this crate to access the peripherals of the STM32, safely wrapped in rust.</p>
 <p>From the STM32F4 HAL we import the Peripheral Access Crate (PAC) and the preludes. The preludes import some generics and traits for embedded HAL that saves us some typing.
@@ -215,170 +304,7 @@ let ms: u32 = 8_000;
         LD1.set_low();   
     }
 <span class="boring">}</span></code></pre></pre>
-<h2 id="complete-example"><a class="header" href="#complete-example">Complete Example</a></h2>
-<p>Here is a complete code example, it is the default example, and can be run with:</p>
-<pre><code class="language-sh">$ cargo embed --example blinky
-</code></pre>
-<pre><pre class="playground"><code class="language-rust">// ========================== Embedded Rust Set-up ==========================
-#![deny(unsafe_code)]
-#![no_main]
-#![no_std]
-
-
-// Imports
-use defmt::*;
-use defmt_rtt as _; // Global logger
-use panic_probe as _; // Panic handler with defmt support
-use cortex_m_rt::entry;
-use stm32f4xx_hal::{
-    pac::{self},
-    prelude::*,
-};
-
-
-#[allow(non_snake_case)]
-#[allow(clippy::empty_loop)]
-#[entry]
-fn main() -&gt; ! {
-    // ========================== Set-up ==========================
-    // Take ownership of device peripherals and split out GPIO group A and B
-    let dp = pac::Peripherals::take().unwrap();
-    let gpioa = dp.GPIOA.split();
-
-    // Configure pins
-    let mut LD1 = gpioa.pa5.into_push_pull_output();
-    LD1.set_low();
-
-    // Calculate conversion factor from clock cycles to ms, assuming 8 MHz
-    let ms: u32 = 8_000;
-
-
-   // ========================== LOOP ==========================
-    loop {
-        // Wait 500ms
-        cortex_m::asm::delay(500 * ms);
-
-        // Turn on LED LD1
-        LD1.set_high();
-
-        // Wait 500ms
-        cortex_m::asm::delay(500 * ms);
-
-        // Turn off LED LD1
-        LD1.set_low();
-
-        
-    }
-}</code></pre></pre>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="hello-world-in-embedded-rust"><a class="header" href="#hello-world-in-embedded-rust">Hello World! In embedded rust!</a></h1>
-<p>To print hello world to the user, we need a way to send serial messages, in this case we use the debugger probe-rs with defmt. You might say, but what about other debuggers like GBD or openOCD?
-My answer is no, here we are going full rust, or get scuffed.</p>
-<p>Add the debugger to our dependencies in <code>Cargo.toml</code>:</p>
-<pre><code class="language-toml">Cargo.toml
-[dependencies]
-defmt = "1.0.1"
-defmt-rtt = "1.0.0"
-panic-probe = { version = "1.0.0", features = ["print-defmt"] }
-</code></pre>
-<p>Then we import the debugger into our main function, and use <code>info!</code> to to send a message to the terminal:</p>
-<pre><pre class="playground"><code class="language-rust">main.rs
-// Import defmt debugger
-use defmt::*;         // Debugger
-use defmt_rtt as _;   // Use defmt as global rtt logger
-use panic_probe as _; // Panic handler with defmt support
-
-#[entry] 
-fn main() -&gt; ! {
-    // Use info! to print a message to the terminal. 
-    info!("Hello World!");
-
-    loop {}
-}</code></pre></pre>
 <h2 id="complete-example-1"><a class="header" href="#complete-example-1">Complete Example</a></h2>
-<p>Here is a complete code example, it is the default example, and can be run with:</p>
-<pre><code class="language-sh">$ cargo build
-$ cargo embed
-</code></pre>
-<pre><pre class="playground"><code class="language-rust">#![deny(unsafe_code)]
-#![no_main]
-#![no_std]
-
-// Crates
-use cortex_m_rt::entry; // ARM dependencies for cortex-m architecture
-use stm32f4xx_hal as _; // STM32F4 series HAL crate
-
-// Debugger
-use defmt::*;
-use defmt_rtt as _;     // Global logger
-use panic_probe as _;   // Panic handler with defmt support
-
-
-// MAIN
-#[allow(clippy::empty_loop)] 
-#[entry] 
-fn main() -&gt; ! {
-    info!("Use cargo embed --example &lt;example name&gt;, to build examples!");
-
-    loop {}
-}</code></pre></pre>
-<p>Don't forget to have you STM32F4 connected! A terminal should open and look like this:
-<img src="examples/../images/hello_world_terminal.png" alt="Hello World Terminal" /></p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="blinky-1"><a class="header" href="#blinky-1">Blinky</a></h1>
-<p>Blinky will be our first attempt at using the STM32F4 HAL crate. We use this crate to access the peripherals of the STM32, safely wrapped in rust.</p>
-<p>From the STM32F4 HAL we import the Peripheral Access Crate (PAC) and the preludes. The preludes import some generics and traits for embedded HAL that saves us some typing.
-The PAC is how we access the peripherals of the microcontroller unit (MCU).</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span>use stm32f4xx_hal::{
-    pac::{self},
-    prelude::*,
-};
-<span class="boring">}</span></code></pre></pre>
-<h2 id="what-is-a-pac-1"><a class="header" href="#what-is-a-pac-1">What is a PAC?</a></h2>
-<p>Peripheral Access Crate (PAC) is how we access the peripherals of the microcontroller unit (MCU).
-To use the peripherals, we need to assign ownership of the device peripherals. This is required in rust to manage memory.</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span>    let dp = pac::Peripherals::take().unwrap();
-<span class="boring">}</span></code></pre></pre>
-<p>From the device peripherals, we split out the struct gpioa, which is the GPIO group A on the microcontroller. We can see in the datasheet that this group contains pins 0-15 (PA0-15).</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span>    let gpioa = dp.GPIOA.split();
-<span class="boring">}</span></code></pre></pre>
-<p>We can assign a single pin to a variable and configure it, in this case we want to configure it into a push/pull output, to either connect our LED to power or ground.</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span>    let mut LD1 = gpioa.pa5.into_push_pull_output();
-<span class="boring">}</span></code></pre></pre>
-<p>Now that we have configured PA5 into a push/pull output with the name LD1, which correspondes with the LD1 LED on the ST NucleoF401RE board. We probably want to do something with it right?
-We can turn it off, with the following commands:</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span>    LD1.set_low();
-    LD1.set_high();
-<span class="boring">}</span></code></pre></pre>
-<p>We also want it to blink, we can use <code>cortex_m::asm::delay(8_000_000);</code>, this simply pauses the program for 8 000 000 million clock cycles, and since our clock runs at 8MHz, that equates to 1 second.<br />
-By adding a conversion factor, we can use milliseconds instead, giving us a simple blinky program:</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span>// Clock-cycles to millisecond conversion factor
-let ms: u32 = 8_000;
-    loop {
-        // Wait 500ms
-        cortex_m::asm::delay(500 * ms);
-
-        // Turn on LED LD1
-        LD1.set_high();
-
-        // Wait 500ms
-        cortex_m::asm::delay(500 * ms);
-
-        // Turn off LED LD1
-        LD1.set_low();   
-    }
-<span class="boring">}</span></code></pre></pre>
-<h2 id="complete-example-2"><a class="header" href="#complete-example-2">Complete Example</a></h2>
 <p>Here is a complete code example, it is the default example, and can be run with:</p>
 <pre><code class="language-sh">$ cargo embed --example blinky
 </code></pre>
@@ -457,7 +383,7 @@ loop {
     }
 }
 <span class="boring">}</span></code></pre></pre>
-<h2 id="complete-example-3"><a class="header" href="#complete-example-3">Complete Example</a></h2>
+<h2 id="complete-example-2"><a class="header" href="#complete-example-2">Complete Example</a></h2>
 <p>Here is a complete code example and can be run with:</p>
 <pre><code class="language-sh">$ cargo embed --example buten
 </code></pre>
@@ -569,7 +495,7 @@ In this case divided by 4 or 25% duty cycle.</p>
 <p>Here we initialize the counter and calculate the clock-cycle to ms factor.<br />
 In the main loop we check if our button is pressed(<code>if B1.is_low()</code>), if it is, we wait for 50ms(<code>cortex_m::asm:delay(50*ms)</code>), then if it still is pressed, we increment the counter. The reason for the delay is a quick-and-dirty debounce of the button. To increment to counter from 0-10, we use this <code>counter = (counter + 1) % 11</code>. Then wait for the button to be unpressed (<code>while B1.is_high()</code>), so we don't increment more than once.</p>
 <p>Outside the loop, we calculate the desired duty cycle from the counter and apply it to our LED, LD1.</p>
-<h2 id="complete-example-4"><a class="header" href="#complete-example-4">Complete Example</a></h2>
+<h2 id="complete-example-3"><a class="header" href="#complete-example-3">Complete Example</a></h2>
 <p>Here is a complete code example and can be run with:</p>
 <pre><code class="language-sh">$ cargo embed --example pwm_dimmer
 </code></pre>
@@ -635,6 +561,95 @@ fn main() -&gt; ! {
     let duty = (max_duty * counter) / 10; // 10 steps (0%, 10%, ..., 100%)
     LD1_pwm.set_duty(duty);
 }
+}</code></pre></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="dimming-a-led-using-a-potentiometer"><a class="header" href="#dimming-a-led-using-a-potentiometer">Dimming a LED using a potentiometer</a></h1>
+<p>Lets try controlling the brightness of a LED using a potentiometer. To do things we need to measure the analog voltage from a potentiometer.<br />
+To do this, we need to import the adc peripheral from the HAL library:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use stm32f4xx_hal::{
+    pac::{self},
+    adc::{config::AdcConfig, config::SampleTime, Adc},
+    prelude::*,
+};
+<span class="boring">}</span></code></pre></pre>
+<p>Then we configure our pin PA0 into a analog pin, then configure the adc connected to it (ADC1), as ADC.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// Configure ADC
+let dimmer = gpioa.pa0.into_analog();
+let mut adc = Adc::adc1(dp.ADC1, true, AdcConfig::default());
+<span class="boring">}</span></code></pre></pre>
+<p>Now, we can read the raw analog value using adc.convert.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// Read Dimmer 
+let duty = adc.convert(&amp;dimmer, SampleTime::Cycles_480);
+<span class="boring">}</span></code></pre></pre>
+<h2 id="complete-example-4"><a class="header" href="#complete-example-4">Complete Example</a></h2>
+<p>Here is a complete code example and can be run with:</p>
+<pre><code class="language-sh">$ cargo embed --example potmeter_dimmer
+</code></pre>
+<pre><pre class="playground"><code class="language-rust">// ========================== Embedded Rust Set-up ==========================
+#![deny(unsafe_code)]
+#![no_main]
+#![no_std]
+
+
+// Imports
+use defmt::*;
+use defmt_rtt as _; // Global logger
+use panic_probe as _; // Panic handler with defmt support
+use cortex_m::asm;
+use cortex_m_rt::entry;
+use stm32f4xx_hal::{
+    pac::{self},
+    adc::{config::AdcConfig, config::SampleTime, Adc},
+    prelude::*,
+};
+
+
+#[allow(non_snake_case)]
+#[allow(clippy::empty_loop)]
+#[entry]
+fn main() -&gt; ! {
+    // ========================== Set-up ==========================
+    // Take ownership of device peripherals and split out GPIO group A and B
+    let dp = pac::Peripherals::take().unwrap();
+    let gpioa = dp.GPIOA.split();
+
+    // Configure clocks
+    let rcc = dp.RCC.constrain();
+    let clocks = rcc.cfgr.use_hse(8.MHz()).freeze();
+
+    // Configure ADC
+    let dimmer = gpioa.pa0.into_analog();
+    let mut adc = Adc::adc1(dp.ADC1, true, AdcConfig::default());
+
+    // Configure PWM
+    let (_, (LD1_pwm, ..)) = dp.TIM2.pwm_hz(2000.Hz(), &amp;clocks);
+    let mut LD1_pwm = LD1_pwm.with(gpioa.pa5);
+    LD1_pwm.enable();
+
+    // Calculate conversion factor from clock cycles to ms, assuming 8 MHz
+    let ms: u32 = 8_000;
+
+
+   // ========================== LOOP ==========================
+    loop {
+        // Read Dimmer 
+        let duty = adc.convert(&amp;dimmer, SampleTime::Cycles_480);
+
+        // Set LED duty
+        LD1_pwm.set_duty(duty);  // Turn OFF LED
+
+        // Print Duty
+        info!("Dimmer = {}", duty);
+
+        // Delay until next cycle
+        asm::delay(100 * ms); 
+
+    }
 }</code></pre></pre>
 
                     </main>
