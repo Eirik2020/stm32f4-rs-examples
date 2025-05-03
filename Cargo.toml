@@ -10,6 +10,11 @@ cortex-m-rt = "0.7"
 defmt = "1.0.1"
 defmt-rtt = "1.0.0"
 panic-probe = { version = "1.0.0", features = ["print-defmt"] }
+as5600 = "0.8.0"
+embedded-hal = "1.0.0" 
+nb = "1.1"
+panic-halt = "1.0.0"
+
 
 [dependencies.stm32f4xx-hal]
 version = "0.22.1"
