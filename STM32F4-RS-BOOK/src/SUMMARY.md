@@ -7,3 +7,4 @@
     - [Buten Controlled Light](./examples/buten.md)
     - [PWM Light Dimmer](./examples/pwm_dimmer.md)
     - [Dimming a LED using a potentiometer](./examples/potmeter_dimmer.md)
+    - [Sending UART messages](./examples/uart.md)
