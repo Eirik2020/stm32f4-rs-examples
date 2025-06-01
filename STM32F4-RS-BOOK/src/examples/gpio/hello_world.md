@@ -61,6 +61,6 @@ fn main() -> ! {
 ```
 
 Don't forget to have you STM32F4 connected! A terminal should open and look like this:
-![Hello World Terminal](../images/hello_world_terminal.png)
+![Hello World Terminal](../../images/hello_world_terminal.png)
 
 
