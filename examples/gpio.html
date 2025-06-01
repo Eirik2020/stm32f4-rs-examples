@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Dimming a LED using a potentiometer - Embedded Rust on the STM32F4 for dummies</title>
+        <title>General Purpose IO - Embedded Rust on the STM32F4 for dummies</title>
 
 
         <!-- Custom HTML head -->
@@ -166,105 +166,18 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="dimming-a-led-using-a-potentiometer"><a class="header" href="#dimming-a-led-using-a-potentiometer">Dimming a LED using a potentiometer</a></h1>
-<p>Lets try controlling the brightness of a LED using a potentiometer. To do things we need to measure the analog voltage from a potentiometer.<br />
-To do this, we need to import the adc peripheral from the HAL library:</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span>use stm32f4xx_hal::{
-    pac::{self},
-    adc::{config::AdcConfig, config::SampleTime, Adc},
-    prelude::*,
-};
-<span class="boring">}</span></code></pre></pre>
-<p>Then we configure our pin PA0 into a analog pin, then configure the adc connected to it (ADC1), as ADC.</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span>// Configure ADC
-let dimmer = gpioa.pa0.into_analog();
-let mut adc = Adc::adc1(dp.ADC1, true, AdcConfig::default());
-<span class="boring">}</span></code></pre></pre>
-<p>Now, we can read the raw analog value using adc.convert.</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span>// Read Dimmer 
-let duty = adc.convert(&amp;dimmer, SampleTime::Cycles_480);
-<span class="boring">}</span></code></pre></pre>
-<h2 id="complete-example"><a class="header" href="#complete-example">Complete Example</a></h2>
-<p>Here is a complete code example and can be run with:</p>
-<pre><code class="language-sh">$ cargo embed --example potmeter_dimmer
-</code></pre>
-<pre><pre class="playground"><code class="language-rust">// ========================== Embedded Rust Set-up ==========================
-#![deny(unsafe_code)]
-#![no_main]
-#![no_std]
-
-
-// Imports
-use defmt::*;
-use defmt_rtt as _; // Global logger
-use panic_probe as _; // Panic handler with defmt support
-use cortex_m::asm;
-use cortex_m_rt::entry;
-use stm32f4xx_hal::{
-    pac::{self},
-    adc::{config::AdcConfig, config::SampleTime, Adc},
-    prelude::*,
-};
-
-
-#[allow(non_snake_case)]
-#[allow(clippy::empty_loop)]
-#[entry]
-fn main() -&gt; ! {
-    // ========================== Set-up ==========================
-    // Take ownership of device peripherals and split out GPIO group A and B
-    let dp = pac::Peripherals::take().unwrap();
-    let gpioa = dp.GPIOA.split();
-
-    // Configure clocks
-    let rcc = dp.RCC.constrain();
-    let clocks = rcc.cfgr.use_hse(8.MHz()).freeze();
-
-    // Configure ADC
-    let dimmer = gpioa.pa0.into_analog();
-    let mut adc = Adc::adc1(dp.ADC1, true, AdcConfig::default());
-
-    // Configure PWM
-    let (_, (LD1_pwm, ..)) = dp.TIM2.pwm_hz(2000.Hz(), &amp;clocks);
-    let mut LD1_pwm = LD1_pwm.with(gpioa.pa5);
-    LD1_pwm.enable();
-
-    // Calculate conversion factor from clock cycles to ms, assuming 8 MHz
-    let ms: u32 = 8_000;
-
-
-   // ========================== LOOP ==========================
-    loop {
-        // Read Dimmer 
-        let duty = adc.convert(&amp;dimmer, SampleTime::Cycles_480);
-
-        // Set LED duty
-        LD1_pwm.set_duty(duty);  // Turn OFF LED
-
-        // Print Duty
-        info!("Dimmer = {}", duty);
-
-        // Delay until next cycle
-        asm::delay(100 * ms); 
-
-    }
-}</code></pre></pre>
+                        <h1 id="general-purpose-io"><a class="header" href="#general-purpose-io">General Purpose IO</a></h1>
+<p>This chapter covers GPIO, and some common applications.</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../examples/pwm_dimmer.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../examples.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
 
-                            <a rel="next prefetch" href="../examples/uart.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../examples/gpio/hello_world.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
 
@@ -274,11 +187,11 @@ fn main() -&gt; ! {
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../examples/pwm_dimmer.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../examples.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
 
-                    <a rel="next prefetch" href="../examples/uart.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../examples/gpio/hello_world.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
             </nav>

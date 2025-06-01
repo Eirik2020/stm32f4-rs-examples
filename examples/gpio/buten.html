@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Blinky Light - Embedded Rust on the STM32F4 for dummies</title>
+        <title>Buten Controlled Light - Embedded Rust on the STM32F4 for dummies</title>
 
 
         <!-- Custom HTML head -->
@@ -12,33 +12,33 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#ffffff">
 
-        <link rel="icon" href="../favicon.svg">
-        <link rel="shortcut icon" href="../favicon.png">
-        <link rel="stylesheet" href="../css/variables.css">
-        <link rel="stylesheet" href="../css/general.css">
-        <link rel="stylesheet" href="../css/chrome.css">
-        <link rel="stylesheet" href="../css/print.css" media="print">
+        <link rel="icon" href="../../favicon.svg">
+        <link rel="shortcut icon" href="../../favicon.png">
+        <link rel="stylesheet" href="../../css/variables.css">
+        <link rel="stylesheet" href="../../css/general.css">
+        <link rel="stylesheet" href="../../css/chrome.css">
+        <link rel="stylesheet" href="../../css/print.css" media="print">
 
         <!-- Fonts -->
-        <link rel="stylesheet" href="../FontAwesome/css/font-awesome.css">
-        <link rel="stylesheet" href="../fonts/fonts.css">
+        <link rel="stylesheet" href="../../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../../fonts/fonts.css">
 
         <!-- Highlight.js Stylesheets -->
-        <link rel="stylesheet" id="highlight-css" href="../highlight.css">
-        <link rel="stylesheet" id="tomorrow-night-css" href="../tomorrow-night.css">
-        <link rel="stylesheet" id="ayu-highlight-css" href="../ayu-highlight.css">
+        <link rel="stylesheet" id="highlight-css" href="../../highlight.css">
+        <link rel="stylesheet" id="tomorrow-night-css" href="../../tomorrow-night.css">
+        <link rel="stylesheet" id="ayu-highlight-css" href="../../ayu-highlight.css">
 
         <!-- Custom theme stylesheets -->
 
 
         <!-- Provide site root and default themes to javascript -->
         <script>
-            const path_to_root = "../";
+            const path_to_root = "../../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc.js"></script>
+        <script src="../../toc.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -102,7 +102,7 @@
             <!-- populated by js -->
             <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
             <noscript>
-                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
+                <iframe class="sidebar-iframe-outer" src="../../toc.html"></iframe>
             </noscript>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle">
                 <div class="sidebar-resize-indicator"></div>
@@ -137,7 +137,7 @@
                     <h1 class="menu-title">Embedded Rust on the STM32F4 for dummies</h1>
 
                     <div class="right-buttons">
-                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                        <a href="../../print.html" title="Print this book" aria-label="Print this book">
                             <i id="print-button" class="fa fa-print"></i>
                         </a>
 
@@ -166,64 +166,33 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="blinky"><a class="header" href="#blinky">Blinky</a></h1>
-<p>Blinky will be our first attempt at using the STM32F4 HAL crate. We use this crate to access the peripherals of the STM32, safely wrapped in rust.</p>
-<p>From the STM32F4 HAL we import the Peripheral Access Crate (PAC) and the preludes. The preludes import some generics and traits for embedded HAL that saves us some typing.
-The PAC is how we access the peripherals of the microcontroller unit (MCU).</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span>use stm32f4xx_hal::{
-    pac::{self},
-    prelude::*,
-};
-<span class="boring">}</span></code></pre></pre>
-<h2 id="what-is-a-pac"><a class="header" href="#what-is-a-pac">What is a PAC?</a></h2>
-<p>Peripheral Access Crate (PAC) is how we access the peripherals of the microcontroller unit (MCU).
-To use the peripherals, we need to assign ownership of the device peripherals. This is required in rust to manage memory.</p>
+                        <h1 id="buten-controlled-light"><a class="header" href="#buten-controlled-light">Buten Controlled Light</a></h1>
+<p>Being able to have some inputs would be nice right?
+So lets try controlling the LED with the on-board button. Just like in the blinky example, we need to split out of peripherals. We also split out GPIO group C, since the on-board button B1, is connected to pin 13 in group C, PC13.</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>    let dp = pac::Peripherals::take().unwrap();
+    let gpioa = dp.GPIOA.split();
+    let gpioc = dp.GPIOC.split();
 <span class="boring">}</span></code></pre></pre>
-<p>From the device peripherals, we split out the struct gpioa, which is the GPIO group A on the microcontroller. We can see in the datasheet that this group contains pins 0-15 (PA0-15).</p>
+<p>We then assign PC13 to B1. Notice here we don't need to declare B1 a mutable variable, since we only read data from it. (If we wanted to write to it, we had to make it mutable).<br />
+We then check if B1 is true (high) using <code>.is_low()</code>, and set our LED LD1 high if it is.</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>    let gpioa = dp.GPIOA.split();
-<span class="boring">}</span></code></pre></pre>
-<p>We can assign a single pin to a variable and configure it, in this case we want to configure it into a push/pull output, to either connect our LED to power or ground.</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span>    let mut LD1 = gpioa.pa5.into_push_pull_output();
-<span class="boring">}</span></code></pre></pre>
-<p>Now that we have configured PA5 into a push/pull output with the name LD1, which correspondes with the LD1 LED on the ST NucleoF401RE board. We probably want to do something with it right?
-We can turn it off, with the following commands:</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span>    LD1.set_low();
-    LD1.set_high();
-<span class="boring">}</span></code></pre></pre>
-<p>We also want it to blink, we can use <code>cortex_m::asm::delay(8_000_000);</code>, this simply pauses the program for 8 000 000 million clock cycles, and since our clock runs at 8MHz, that equates to 1 second.<br />
-By adding a conversion factor, we can use milliseconds instead, giving us a simple blinky program:</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span>// Clock-cycles to millisecond conversion factor
-let ms: u32 = 8_000;
-    loop {
-        // Wait 500ms
-        cortex_m::asm::delay(500 * ms);
+</span>let B1 = gpioc.pc13;
 
-        // Turn on LED LD1
-        LD1.set_high();
-
-        // Wait 500ms
-        cortex_m::asm::delay(500 * ms);
-
-        // Turn off LED LD1
-        LD1.set_low();   
+loop {
+    // Check if button is pressed
+    if B1.is_low() {
+        LD1.set_high(); // Turn ON LED
+    } else {
+        LD1.set_low(); // Turn OFF LED
     }
+}
 <span class="boring">}</span></code></pre></pre>
 <h2 id="complete-example"><a class="header" href="#complete-example">Complete Example</a></h2>
-<p>Here is a complete code example, it is the default example, and can be run with:</p>
-<pre><code class="language-sh">$ cargo embed --example blinky
+<p>Here is a complete code example and can be run with:</p>
+<pre><code class="language-sh">$ cargo embed --example buten
 </code></pre>
 <pre><pre class="playground"><code class="language-rust">// ========================== Embedded Rust Set-up ==========================
 #![deny(unsafe_code)]
@@ -232,7 +201,6 @@ let ms: u32 = 8_000;
 
 
 // Imports
-use defmt::*;
 use defmt_rtt as _; // Global logger
 use panic_probe as _; // Panic handler with defmt support
 use cortex_m_rt::entry;
@@ -250,42 +218,34 @@ fn main() -&gt; ! {
     // Take ownership of device peripherals and split out GPIO group A and B
     let dp = pac::Peripherals::take().unwrap();
     let gpioa = dp.GPIOA.split();
+    let gpioc = dp.GPIOC.split();
 
     // Configure pins
     let mut LD1 = gpioa.pa5.into_push_pull_output();
     LD1.set_low();
-
-    // Calculate conversion factor from clock cycles to ms, assuming 8 MHz
-    let ms: u32 = 8_000;
-
+    let B1 = gpioc.pc13;
 
    // ========================== LOOP ==========================
     loop {
-        // Wait 500ms
-        cortex_m::asm::delay(500 * ms);
-
-        // Turn on LED LD1
-        LD1.set_high();
-
-        // Wait 500ms
-        cortex_m::asm::delay(500 * ms);
-
-        // Turn off LED LD1
-        LD1.set_low();
-
-        
+        // Check if button is pressed
+        if B1.is_low() {
+            LD1.set_high(); // Turn ON LED
+        } else {
+            LD1.set_low(); // Turn OFF LED
+        }
     }
 }</code></pre></pre>
+<p>(btw, buten is a inside joke, I am not illiterate)</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../examples/hello_world.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../../examples/gpio/blinky.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
 
-                            <a rel="next prefetch" href="../examples/buten.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../../examples/gpio/pwm_dimmer.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
 
@@ -295,11 +255,11 @@ fn main() -&gt; ! {
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../examples/hello_world.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../../examples/gpio/blinky.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
 
-                    <a rel="next prefetch" href="../examples/buten.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../../examples/gpio/pwm_dimmer.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
             </nav>
@@ -314,13 +274,13 @@ fn main() -&gt; ! {
         </script>
 
 
-        <script src="../elasticlunr.min.js"></script>
-        <script src="../mark.min.js"></script>
-        <script src="../searcher.js"></script>
+        <script src="../../elasticlunr.min.js"></script>
+        <script src="../../mark.min.js"></script>
+        <script src="../../searcher.js"></script>
 
-        <script src="../clipboard.min.js"></script>
-        <script src="../highlight.js"></script>
-        <script src="../book.js"></script>
+        <script src="../../clipboard.min.js"></script>
+        <script src="../../highlight.js"></script>
+        <script src="../../book.js"></script>
 
         <!-- Custom JS scripts -->
 

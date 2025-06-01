@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Examples - Embedded Rust on the STM32F4 for dummies</title>
+        <title>Dimming a LED using a potentiometer - Embedded Rust on the STM32F4 for dummies</title>
 
 
         <!-- Custom HTML head -->
@@ -12,33 +12,33 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#ffffff">
 
-        <link rel="icon" href="favicon.svg">
-        <link rel="shortcut icon" href="favicon.png">
-        <link rel="stylesheet" href="css/variables.css">
-        <link rel="stylesheet" href="css/general.css">
-        <link rel="stylesheet" href="css/chrome.css">
-        <link rel="stylesheet" href="css/print.css" media="print">
+        <link rel="icon" href="../../favicon.svg">
+        <link rel="shortcut icon" href="../../favicon.png">
+        <link rel="stylesheet" href="../../css/variables.css">
+        <link rel="stylesheet" href="../../css/general.css">
+        <link rel="stylesheet" href="../../css/chrome.css">
+        <link rel="stylesheet" href="../../css/print.css" media="print">
 
         <!-- Fonts -->
-        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
-        <link rel="stylesheet" href="fonts/fonts.css">
+        <link rel="stylesheet" href="../../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../../fonts/fonts.css">
 
         <!-- Highlight.js Stylesheets -->
-        <link rel="stylesheet" id="highlight-css" href="highlight.css">
-        <link rel="stylesheet" id="tomorrow-night-css" href="tomorrow-night.css">
-        <link rel="stylesheet" id="ayu-highlight-css" href="ayu-highlight.css">
+        <link rel="stylesheet" id="highlight-css" href="../../highlight.css">
+        <link rel="stylesheet" id="tomorrow-night-css" href="../../tomorrow-night.css">
+        <link rel="stylesheet" id="ayu-highlight-css" href="../../ayu-highlight.css">
 
         <!-- Custom theme stylesheets -->
 
 
         <!-- Provide site root and default themes to javascript -->
         <script>
-            const path_to_root = "";
+            const path_to_root = "../../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc.js"></script>
+        <script src="../../toc.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -102,7 +102,7 @@
             <!-- populated by js -->
             <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
             <noscript>
-                <iframe class="sidebar-iframe-outer" src="toc.html"></iframe>
+                <iframe class="sidebar-iframe-outer" src="../../toc.html"></iframe>
             </noscript>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle">
                 <div class="sidebar-resize-indicator"></div>
@@ -137,7 +137,7 @@
                     <h1 class="menu-title">Embedded Rust on the STM32F4 for dummies</h1>
 
                     <div class="right-buttons">
-                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                        <a href="../../print.html" title="Print this book" aria-label="Print this book">
                             <i id="print-button" class="fa fa-print"></i>
                         </a>
 
@@ -166,24 +166,105 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="examples"><a class="header" href="#examples">Examples</a></h1>
-<p>Here is a list of examples to show how to do most basic stuff in embedded rust.</p>
-<p>These examples are available on my Github Repo, <code>stm32f4-rs-examples</code>, and can be cloned with:</p>
-<pre><code class="language-sh">git clone https://github.com/Eirik2020/stm32f4-rs-examples.git
+                        <h1 id="dimming-a-led-using-a-potentiometer"><a class="header" href="#dimming-a-led-using-a-potentiometer">Dimming a LED using a potentiometer</a></h1>
+<p>Lets try controlling the brightness of a LED using a potentiometer. To do things we need to measure the analog voltage from a potentiometer.<br />
+To do this, we need to import the adc peripheral from the HAL library:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use stm32f4xx_hal::{
+    pac::{self},
+    adc::{config::AdcConfig, config::SampleTime, Adc},
+    prelude::*,
+};
+<span class="boring">}</span></code></pre></pre>
+<p>Then we configure our pin PA0 into a analog pin, then configure the adc connected to it (ADC1), as ADC.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// Configure ADC
+let dimmer = gpioa.pa0.into_analog();
+let mut adc = Adc::adc1(dp.ADC1, true, AdcConfig::default());
+<span class="boring">}</span></code></pre></pre>
+<p>Now, we can read the raw analog value using adc.convert.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// Read Dimmer 
+let duty = adc.convert(&amp;dimmer, SampleTime::Cycles_480);
+<span class="boring">}</span></code></pre></pre>
+<h2 id="complete-example"><a class="header" href="#complete-example">Complete Example</a></h2>
+<p>Here is a complete code example and can be run with:</p>
+<pre><code class="language-sh">$ cargo embed --example potmeter_dimmer
 </code></pre>
-<p>Then opened with:</p>
-<pre><code class="language-sh">code stm32f4-rs-examples
-</code></pre>
+<pre><pre class="playground"><code class="language-rust">// ========================== Embedded Rust Set-up ==========================
+#![deny(unsafe_code)]
+#![no_main]
+#![no_std]
+
+
+// Imports
+use defmt::*;
+use defmt_rtt as _; // Global logger
+use panic_probe as _; // Panic handler with defmt support
+use cortex_m::asm;
+use cortex_m_rt::entry;
+use stm32f4xx_hal::{
+    pac::{self},
+    adc::{config::AdcConfig, config::SampleTime, Adc},
+    prelude::*,
+};
+
+
+#[allow(non_snake_case)]
+#[allow(clippy::empty_loop)]
+#[entry]
+fn main() -&gt; ! {
+    // ========================== Set-up ==========================
+    // Take ownership of device peripherals and split out GPIO group A and B
+    let dp = pac::Peripherals::take().unwrap();
+    let gpioa = dp.GPIOA.split();
+
+    // Configure clocks
+    let rcc = dp.RCC.constrain();
+    let clocks = rcc.cfgr.use_hse(8.MHz()).freeze();
+
+    // Configure ADC
+    let dimmer = gpioa.pa0.into_analog();
+    let mut adc = Adc::adc1(dp.ADC1, true, AdcConfig::default());
+
+    // Configure PWM
+    let (_, (LD1_pwm, ..)) = dp.TIM2.pwm_hz(2000.Hz(), &amp;clocks);
+    let mut LD1_pwm = LD1_pwm.with(gpioa.pa5);
+    LD1_pwm.enable();
+
+    // Calculate conversion factor from clock cycles to ms, assuming 8 MHz
+    let ms: u32 = 8_000;
+
+
+   // ========================== LOOP ==========================
+    loop {
+        // Read Dimmer 
+        let duty = adc.convert(&amp;dimmer, SampleTime::Cycles_480);
+
+        // Set LED duty
+        LD1_pwm.set_duty(duty);  // Turn OFF LED
+
+        // Print Duty
+        info!("Dimmer = {}", duty);
+
+        // Delay until next cycle
+        asm::delay(100 * ms); 
+
+    }
+}</code></pre></pre>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="set_up.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../../examples/gpio/pwm_dimmer.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
 
-                            <a rel="next prefetch" href="examples/gpio.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../../examples/uart.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
 
@@ -193,11 +274,11 @@
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="set_up.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../../examples/gpio/pwm_dimmer.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
 
-                    <a rel="next prefetch" href="examples/gpio.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../../examples/uart.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
             </nav>
@@ -212,13 +293,13 @@
         </script>
 
 
-        <script src="elasticlunr.min.js"></script>
-        <script src="mark.min.js"></script>
-        <script src="searcher.js"></script>
+        <script src="../../elasticlunr.min.js"></script>
+        <script src="../../mark.min.js"></script>
+        <script src="../../searcher.js"></script>
 
-        <script src="clipboard.min.js"></script>
-        <script src="highlight.js"></script>
-        <script src="book.js"></script>
+        <script src="../../clipboard.min.js"></script>
+        <script src="../../highlight.js"></script>
+        <script src="../../book.js"></script>
 
         <!-- Custom JS scripts -->
 

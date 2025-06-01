@@ -202,20 +202,15 @@ cargo install flip-link defmt-cli
 </figure>
 <p>You will need a ST NUCLEO-F401RE, is equivalent.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="examples"><a class="header" href="#examples">Examples</a></h1>
-<p>Here is a list of examples to show how to do most basic stuff in embedded rust, like:</p>
-<ol>
-<li>Sending serial messages to your PC</li>
-<li>How to turn on or off a LED with a GPIO pin</li>
-<li>How to read the value of a button with a GPIO pin</li>
-<li>How to do pulse-width-modulation (PWM)</li>
-<li>How to read analog voltages from a potentiometer</li>
-</ol>
+<p>Here is a list of examples to show how to do most basic stuff in embedded rust.</p>
 <p>These examples are available on my Github Repo, <code>stm32f4-rs-examples</code>, and can be cloned with:</p>
 <pre><code class="language-sh">git clone https://github.com/Eirik2020/stm32f4-rs-examples.git
 </code></pre>
 <p>Then opened with:</p>
 <pre><code class="language-sh">code stm32f4-rs-examples
 </code></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="general-purpose-io"><a class="header" href="#general-purpose-io">General Purpose IO</a></h1>
+<p>This chapter covers GPIO, and some common applications.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="hello-world-in-embedded-rust"><a class="header" href="#hello-world-in-embedded-rust">Hello World! In embedded rust!</a></h1>
 <p>To print hello world to the user, we need a way to send serial messages, in this case we use the debugger probe-rs with defmt. You might say, but what about other debuggers like GBD or openOCD?
 My answer is no, here we are going full rust, or get scuffed.</p>
@@ -268,7 +263,7 @@ fn main() -&gt; ! {
     loop {}
 }</code></pre></pre>
 <p>Don't forget to have you STM32F4 connected! A terminal should open and look like this:
-<img src="examples/../images/hello_world_terminal.png" alt="Hello World Terminal" /></p>
+<img src="examples/gpio/../../images/hello_world_terminal.png" alt="Hello World Terminal" /></p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="blinky"><a class="header" href="#blinky">Blinky</a></h1>
 <p>Blinky will be our first attempt at using the STM32F4 HAL crate. We use this crate to access the peripherals of the STM32, safely wrapped in rust.</p>
 <p>From the STM32F4 HAL we import the Peripheral Access Crate (PAC) and the preludes. The preludes import some generics and traits for embedded HAL that saves us some typing.
@@ -671,7 +666,39 @@ fn main() -&gt; ! {
 
     }
 }</code></pre></pre>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="uart"><a class="header" href="#uart">UART</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="sending-and-receiving-messages-to-your-mcu"><a class="header" href="#sending-and-receiving-messages-to-your-mcu">Sending and receiving messages to your MCU</a></h1>
+<p>This chapter covers UART, and some common applications.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="read-and-write-uart-on-your-pc-using-putty"><a class="header" href="#read-and-write-uart-on-your-pc-using-putty">Read and write UART on your PC using Putty</a></h1>
+<p>To read or write UART messages, we can use Putty. We first need to figure out which COM port our MCU is on, we can find this in the device manager under "COM &amp; LPT":</p>
+<figure>
+  <img src="examples/uart/../../images/device_manager.png" alt="Description" width="600">
+  <figcaption>Figure 2 - Device manager showing COM ports.</figcaption>
+</figure>
+<p>Next, we need to configure our serial connection in Putty, under Connection -&gt; Serial:</p>
+<figure>
+  <img src="examples/uart/../../images/putty_serial_setup.png" alt="Description" width="600">
+  <figcaption>Figure 2 - Putty serial settings.</figcaption>
+</figure>
+<ul>
+<li>Set "Serial line to connect to" to the COM port for your MCU, in my case COM6.</li>
+<li>Set "Speed" (baudrate) to 115200, the same we configured in our code.</li>
+<li>Set "Flow Control" to "None".</li>
+</ul>
+<p>Then, go to "Session" and select serial and press open.</p>
+<figure>
+  <img src="examples/uart/../../images/putty_serial_session.png" alt="Description" width="600">
+  <figcaption>Figure 2 - Starting a Putty serial session.</figcaption>
+</figure>
+<p>Assuming you have already flashed your MCU, you should be seeing these messages!</p>
+<figure>
+  <img src="examples/uart/../../images/putty_serial_messages.png" alt="Description" width="600">
+  <figcaption>Figure 2 - Putty serial settings.</figcaption>
+</figure>
+<p>To send messages, you can write in the terminal. If you want to see your writing, the MCU has to either echo the your letters, or you can enable "Force Echo" on putty, by going to Terminal -&gt; Local echo -&gt; "Force on":</p>
+<figure>
+  <img src="examples/uart/../../images/putty_echo.png" alt="Description" width="600">
+  <figcaption>Figure 2 - Enable force echo on Putty.</figcaption>
+</figure><div style="break-before: page; page-break-before: always;"></div><h1 id="sending-messages-from-the-mcu"><a class="header" href="#sending-messages-from-the-mcu">Sending messages from the MCU</a></h1>
 <p>Now we will have a look at UART communication. The bread-and-butter communication between a PC and MCU.</p>
 <p>To use UART on the STM32F4, we need to include the <code>serial</code> module:</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
@@ -712,37 +739,9 @@ let mut serial = Serial::new(dp.USART2, (tx, rx), serial_config, &amp;clocks).un
 </span>writeln!(serial, "hello world!\r").ok();
 <span class="boring">}</span></code></pre></pre>
 <h2 id="complete-example-5"><a class="header" href="#complete-example-5">Complete Example</a></h2>
-<h3 id="running-the-example-code"><a class="header" href="#running-the-example-code">Running the example code</a></h3>
 <p>Here is a complete code example, it is the default example, and can be run with:</p>
 <pre><code class="language-sh">$ cargo embed --example uart_hello_world
 </code></pre>
-<h3 id="viewing-uart-serial-messages-using-putty"><a class="header" href="#viewing-uart-serial-messages-using-putty">Viewing UART serial messages using PuTTy</a></h3>
-<p>To view the UART messages, we can use Putty. We first need to figure out which COM port our MCU is on, we can find this in the device manager under "COM &amp; LPT":</p>
-<figure>
-  <img src="examples/../images/device_manager.png" alt="Description" width="600">
-  <figcaption>Figure 2 - Device manager showing COM ports.</figcaption>
-</figure>
-<p>Next, we need to configure our serial connection in Putty, under Connection -&gt; Serial:</p>
-<figure>
-  <img src="examples/../images/putty_serial_setup.png" alt="Description" width="600">
-  <figcaption>Figure 2 - Putty serial settings.</figcaption>
-</figure>
-<ul>
-<li>Set "Serial line to connect to" to the COM port for your MCU, in my case COM6.</li>
-<li>Set "Speed" (baudrate) to 115200, the same we configured in our code.</li>
-<li>Set "Flow Control" to "None".</li>
-</ul>
-<p>Then, go to "Session" and select serial and press open.</p>
-<figure>
-  <img src="examples/../images/putty_serial_session.png" alt="Description" width="600">
-  <figcaption>Figure 2 - Starting a Putty serial session.</figcaption>
-</figure>
-<p>Assuming you have already flashed your MCU, you should be seeing these messages!</p>
-<figure>
-  <img src="examples/../images/putty_serial_messages.png" alt="Description" width="600">
-  <figcaption>Figure 2 - Putty serial settings.</figcaption>
-</figure>
-<h3 id="code"><a class="header" href="#code">Code</a></h3>
 <pre><pre class="playground"><code class="language-rust">// Compiler directives
 #![no_std]
 #![no_main]
@@ -794,6 +793,652 @@ fn main() -&gt; ! {
         cortex_m::asm::delay(1000 * ms); // 1 second delay
     }
 }</code></pre></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="sending-and-receiving-messages-to-your-mcu-1"><a class="header" href="#sending-and-receiving-messages-to-your-mcu-1">Sending and receiving messages to your MCU</a></h1>
+<p>You might be interested in sending UART messages to your MCU, in this chapter we will cover this and parsing them.
+We will assume that you have familiarized yourself with the previous example "Sending messages from the MCU".</p>
+<p>We include <code>core::fmt</code> and <code>heapless::String</code>. <code>core::fmt</code> is used to write formatted text over UART. While <code>heapless::String</code> gives us data structures without dynamic memory allocation.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use core::fmt::Write;
+use heapless::String; // fixed-capacity string
+<span class="boring">}</span></code></pre></pre>
+<p>The major difference in this case, is that we want to read AND write messages this time. To do this, we need to split our serial object in two:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>let (mut tx, mut rx) = serial.split();
+<span class="boring">}</span></code></pre></pre>
+<p>This way, we can handle sending and receiving messages differently. In addition, we need to store our messages in order to parse them:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>let mut buffer: String&lt;64&gt; = String::new();
+<span class="boring">}</span></code></pre></pre>
+<p>Now here is the juicy part, we want to actually read, store and parse the UART message:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>loop { // Wait for a full line of input
+            if let Ok(byte) = rx.read() { // If a UART byte is received:
+                let c = byte as char;   // Convert byte to char.
+                if c == '\r' || c == '\n' {   // If it is a carrige return or line break, end loop.
+                    break;
+                } else {
+                    buffer.push(c).ok();     // Else, add char to buffer.
+                }
+            }
+        }
+<span class="boring">}</span></code></pre></pre>
+<p>A loop that continuously reads characters from the UART receiver (rx).If it reads a byte from the UART input, it returns nb::Result, so Ok(byte) means a new byte is available.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>if let Ok(byte) = rx.read() {
+            ...
+}
+<span class="boring">}</span></code></pre></pre>
+<p>If a byte is read, its converted from a u8 to a char.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>let c = byte as char;
+<span class="boring">}</span></code></pre></pre>
+<p>If the character is a newline (\n) or carriage return (\r), we assume the user has finished typing, so we break the loop.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>if c == '\r' || c == '\n' {
+            break;
+        }
+<span class="boring">}</span></code></pre></pre>
+<p>Else, we store it to the buffer, for later parsing.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>else {
+        buffer.push(c).ok();
+    }
+<span class="boring">}</span></code></pre></pre>
+<p>Next, we want to greet the user after they have connected, once, so we add a check if this is the first loop.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>        if first_loop {
+            writeln!(tx, "\r\nWelcome to the STM32 UART Menu! \r\n").ok();
+            first_loop = false;
+            }
+<span class="boring">}</span></code></pre></pre>
+<p>Now we need to create our menu, to keep it clean, I've kept it as a separate function.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>fn print_menu&lt;W: Write&gt;(tx: &amp;mut W) {
+    writeln!(tx, "== Menu == \r\n").ok();
+    writeln!(tx, "1. Turn LED ON \r\n").ok();
+    writeln!(tx, "2. Turn LED OFF \r\n").ok();
+    writeln!(tx, "3. Print STATUS \r\n").ok();
+    writeln!(tx, "4. Reset \r\n").ok();
+}
+<span class="boring">}</span></code></pre></pre>
+<p>The menu takes in our transmitter object <code>tx</code>, and then prints out our menu. Nice and simple. Next we want to respond to what the user actually sent:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>print_menu(&amp;mut tx);
+match buffer.trim() {
+    "1" =&gt; writeln!(tx, "You selected option 1: LED ON"),
+    "2" =&gt; writeln!(tx, "You selected option 2: LED OFF"),
+    "3" =&gt; writeln!(tx, "You selected option 3: STATUS OK"),
+    "4" =&gt; writeln!(tx, "You selected option 4: Resetting..."),
+    _   =&gt; writeln!(tx, "ERROR! Invalid command: {}", buffer),
+}.ok();
+<span class="boring">}</span></code></pre></pre>
+<p>Here we first display our menu, then we use <code>match</code>, to match the user's response with our look up table, and write back.</p>
+<p>Finally, we clear the buffer, and give ourself some extra headroom for the next response:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>buffer.clear();
+
+writeln!(tx, "\r\n\n\n").ok();
+<span class="boring">}</span></code></pre></pre>
+<h2 id="complete-example-6"><a class="header" href="#complete-example-6">Complete Example</a></h2>
+<p>Here is a complete code example, it is the default example, and can be run with:</p>
+<pre><code class="language-sh">$ cargo embed --example uart_cli
+</code></pre>
+<p>To interact, connect with Putty, and press enter once to get a response.</p>
+<pre><pre class="playground"><code class="language-rust">// Compiler directives
+#![no_std]
+#![no_main]
+
+// Libraries
+// Generic
+use cortex_m_rt::entry;
+use defmt_rtt as _;
+use panic_probe as _;
+
+// UART Specific
+use core::fmt::Write; // Used for formatted text over UART. 
+use heapless::String; // fixed-capacity string
+use stm32f4xx_hal::{
+    pac,
+    prelude::*,
+    serial::{
+        config::Config, // Struct for storing the UART configuration.
+        Serial // Struct used to initialize UART and pin configuration. 
+    },
+};
+
+
+
+#[entry]
+fn main() -&gt; ! {
+    // Take ownership of peripherals and configure clocks
+    let dp = pac::Peripherals::take().unwrap();
+    let rcc = dp.RCC.constrain();
+    let clocks = rcc.cfgr.freeze();
+
+    // Split out GPIO group A and configure rx and tx pins.
+    let gpioa = dp.GPIOA.split();
+    let tx = gpioa.pa2.into_alternate();
+    let rx = gpioa.pa3.into_alternate();
+
+    // Configure UART communication for 115200 baud rate on USART2. 
+    let serial_config = Config::default().baudrate(115_200.bps());
+    let mut serial = Serial::new(dp.USART2, (tx, rx), serial_config, &amp;clocks).unwrap();
+
+    // Split serial object into receiver and transmitter.
+    let (mut tx, mut rx) = serial.split();
+
+    // Message buffer
+    let mut buffer: String&lt;64&gt; = String::new();
+
+    // First loop check
+    let mut first_loop: bool = true;
+
+
+
+    loop {
+        loop { // Wait for a full line of input
+            if let Ok(byte) = rx.read() { // If a UART byte is received:
+                let c = byte as char;   // Convert byte to char.
+                if c == '\r' || c == '\n' {   // If it is a carrige return or line break, end loop.
+                    break;
+                } else {
+                    buffer.push(c).ok();     // Else, add char to buffer.
+                }
+            }
+        }
+
+        // Run CLI application
+        // Greet user on first loop.
+        if first_loop {
+            writeln!(tx, "\r\nWelcome to the STM32 UART Menu! \r\n").ok();
+            first_loop = false;
+            }
+
+        // Display Menu
+        print_menu(&amp;mut tx); // Print menu
+
+        // Respond to user
+        match buffer.trim() {
+            "1" =&gt; writeln!(tx, "You selected option 1: LED ON"),
+            "2" =&gt; writeln!(tx, "You selected option 2: LED OFF"),
+            "3" =&gt; writeln!(tx, "You selected option 3: STATUS OK"),
+            "4" =&gt; writeln!(tx, "You selected option 4: Resetting..."),
+            _   =&gt; writeln!(tx, "ERROR! Invalid command: {}", buffer),
+        }.ok();
+
+        // Clear buffer
+        buffer.clear();
+
+        // Clear space for next response
+        writeln!(tx, "\r\n\n\n").ok();
+    }
+}
+
+
+// Functions
+fn print_menu&lt;W: Write&gt;(tx: &amp;mut W) {
+    writeln!(tx, "== Menu == \r\n").ok();
+    writeln!(tx, "1. Turn LED ON \r\n").ok();
+    writeln!(tx, "2. Turn LED OFF \r\n").ok();
+    writeln!(tx, "3. Print STATUS \r\n").ok();
+    writeln!(tx, "4. Reset \r\n").ok();
+}</code></pre></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="rtic"><a class="header" href="#rtic">RTIC</a></h1>
+<p>So far, we have only used blocking logic. Meaning, we only do one thing at a time. So for example when we blink our LED, we rush over to the light switch and flip it, then religiously wait for one second. Meaning we do nothing while we wait, which seems like a waste doesn't it?</p>
+<p>Well, RTIC is here to save the day! Now we can boost our productivity by 1000^10%! Think about all the things you could do while waiting, like cleaning your room <em>side-eye</em>.</p>
+<p>To use RTIC, we will need a couple more crates:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use rtt_target::{rprintln, rtt_init_print};
+use panic_rtt_target as _;
+use rtic::app;
+use rtic_monotonics::systick::prelude::*;
+<span class="boring">}</span></code></pre></pre>
+<ul>
+<li><code>use rtt_target::{rprintln, rtt_init_print};</code> - Imports the Real-Time Transfer (RTT) interface.
+<ul>
+<li><code>rtt_init_print</code> - Print line macro that works of RTT.</li>
+<li><code>rprintln</code> - Used to initialize RTT.</li>
+</ul>
+</li>
+<li><code>use panic_rtt_target as _;</code> - Imports panic handler for RTT.</li>
+<li><code>use rtic::app;;</code> - Imports the RTIC app.</li>
+<li><code>use rtic_monotonics::systick::prelude::*;</code> - Imports monotonic timer.</li>
+</ul>
+<p>What is a monotonic timer? I am glad you asked! It it our reference used to schedule tasks and set delays. In the example below, we make a timer running at 1000 Hz, which equals about 1 ms resolution. Allowing us to schedule in milliseconds.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>systick_monotonic!(Mono, 1000); // 1000 Hz
+<span class="boring">}</span></code></pre></pre>
+<p>Next, we will have a look at the structure of a RTIC app:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[app(
+    device = stm32f4xx_hal::pac,  // This device uses the stm32f4xx_hal Peripheral Access Crate (PAC).
+    peripherals = true,           // Auto-initializes the Peripherals struct (dp).
+    dispatchers = [SPI1],         // Unused interrupts that RTIC can use internally for software tasks, in this case SPI1. 
+)]
+mod app {
+    // Import everything (*) from the parent module (rtic_blinky.rs)
+    use super::*;
+
+    // Resources
+    #[shared] // Shared between different tasks
+    struct Shared {}
+
+    #[local] // Task local data only
+    struct Local {}
+
+
+    #[init] // Start-up function that initializes the program.
+    fn init(cx: init::Context) -&gt; (Shared, Local) {
+        (...)
+        (Shared {}, Local {})
+    }
+}
+<span class="boring">}</span></code></pre></pre>
+<p>The first part of our structure has the <code>#[app()]</code>. It contains the configuration for our RTIC app, like which device we are using (STM32F4), if we want to auto-initialize our peripherals (<code>peripherals</code>) and which interrupts (<code>SPI1</code>) are free for the app to use (<code>dispatchers</code>).</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[app(
+    device = stm32f4xx_hal::pac,  
+    peripherals = true,           
+    dispatchers = [SPI1],         
+)]
+<span class="boring">}</span></code></pre></pre>
+<p>Next, we have the app body.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>mod app {
+    use super::*;
+
+    #[shared]
+    struct Shared {}
+
+    #[local]
+    struct Local {}
+
+    #[init] 
+    fn init(cx: init::Context) -&gt; (Shared, Local) {
+        (...)
+        (Shared {}, Local {})
+    }
+}
+<span class="boring">}</span></code></pre></pre>
+<p>The first line <code>use super::*;</code>, simply brings all (<code>*</code>) the imports from the module (<code>your_code.rs</code>) into the app.</p>
+<p>Next, we have the resources avaiable in the app, think variables, data structures etc.</p>
+<ul>
+<li>The shared struct (<code>struct Shared {}</code>), contains resources shared between tasks, like sensor readings.</li>
+<li>The local struct (<code>struct Local {}</code>), contains local data only used within a task, and is NOT shared between structs.</li>
+</ul>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[shared]
+struct Shared {}
+
+#[local]
+struct Local {}
+<span class="boring">}</span></code></pre></pre>
+<p>Lastly we have the <code>init</code> function. This functions initializes our program and kicks it off. We need it since we don't have a main loop anymore.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[init] 
+fn init(cx: init::Context) -&gt; (Shared, Local) {
+    (...)
+    (Shared {}, Local {})
+}
+<span class="boring">}</span></code></pre></pre>
+<p>The <code>init</code> function takes our <code>Local</code> and <code>Shared</code> struct, and puts it into the context struct <code>cx</code>.<br />
+It also allows us to initialize our resources:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>(Shared {}, Local {})
+<span class="boring">}</span></code></pre></pre>
+<p>In addition, we have tasks <code>#[task()]</code>. We use these to perform actions, like blinking a LED, reading a UART message or setting the duty cycle for PWM.
+A task may look like this:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span> #[task(local = [led, state])] // This task uses the local resources "led" and "state".
+    async fn blink(cx: blink::Context) { // Use context cx to access local and shared resources.
+        loop {
+            rprintln!("blink");
+            // Access local resources from context (cx.local)
+            if *cx.local.state {         // If LED is on.
+                cx.local.led.set_high();
+                *cx.local.state = false;
+            } else {                     // If LED is off
+                cx.local.led.set_low();
+                *cx.local.state = true;
+            }
+            // At the end of the task, wait 1000 ms (none-blocking).
+            Mono::delay(1000.millis()).await;
+        }
+    }
+<span class="boring">}</span></code></pre></pre>
+<ul>
+<li><code>#[task(local = [led, state])]</code> - Here the task uses the <code>led</code> and <code>state</code> resources from the local resources struct <code>Local</code>.</li>
+<li><code>#async fn blink(cx: blink::Context)</code> - We declare it as a async function (always required in RTIC V2), and access the resources and peripherals through context(<code>cx</code>).</li>
+</ul>
+<p>The loop operates similarlly as we have done before, but we now access the LED and its state through the <code>cx.local</code> struct.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>loop {
+    rprintln!("blink");
+    // Access local resources from context (cx.local)
+    if *cx.local.state {         // If LED is on.
+        cx.local.led.set_high();
+        *cx.local.state = false;
+        ...
+    }
+}
+<span class="boring">}</span></code></pre></pre>
+<p>Finally at the end, we make use of our monotonic timer:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>Mono::delay(1000.millis()).await;
+<span class="boring">}</span></code></pre></pre>
+<p>As opposed to our old delay, this delay will not block the CPU, allowing it to do other tasks in the background while the <code>blink</code> task is waiting.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="blinking-a-led"><a class="header" href="#blinking-a-led">Blinking a LED</a></h1>
+<p>Now, how do we blink a LED using RTIC?</p>
+<p>As always, we need our imports, and to set up our timer:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use rtt_target::{rprintln, rtt_init_print};
+use panic_rtt_target as _;
+use rtic::app;
+use rtic_monotonics::systick::prelude::*;
+use stm32f4xx_hal::{
+    pac::{self},
+    prelude::*,
+    gpio::{Output, PushPull, PA5},
+};
+
+// Set monotonic time to 1000 Hz, 1 ms resolution.
+systick_monotonic!(Mono, 1000);
+<span class="boring">}</span></code></pre></pre>
+<p>Then we start on our app:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[app(
+    device = stm32f4xx_hal::pac,  // This device uses the stm32f4xx_hal Peripheral Access Crate (PAC).
+    peripherals = true,           // Auto-initializes the Peripherals struct (dp).
+    dispatchers = [SPI1],         // Unused interrupts that RTIC can use internally for software tasks. 
+)]
+mod app {
+    // Import everything (*) from the parent module (rtic_blinky.rs)
+    use super::*;
+
+    // Resources
+    #[shared] // Shared between different tasks
+    struct Shared {}
+
+    #[local] // Task local data only
+    struct Local {
+        led: PA5&lt;Output&lt;PushPull&gt;&gt;, // LED pin
+        state: bool,                // LED state (ON/OFF)
+    }
+
+
+    #[init] // Start-up function that initializes the program.
+    fn init(cx: init::Context) -&gt; (Shared, Local) {
+        // Assign context device peripherals to dp.
+        let dp = cx.device;
+
+        // Initialize the systick interrupt &amp; obtain the token to prove that we did
+        Mono::start(cx.core.SYST, 8_000_000); // default STM32F401 clock-rate is 8MHz
+
+        // Report that the program successfully started.
+        rtt_init_print!();
+        rprintln!("init");
+
+        // Setup LED
+        let gpioa = dp.GPIOA.split();
+        let mut led = gpioa.pa5.into_push_pull_output();
+        led.set_low();
+
+        // Schedule the blinking task
+        blink::spawn().ok();
+
+        // Initialize resources
+        (Shared {}, Local { led, state: false })
+    }
+}
+<span class="boring">}</span></code></pre></pre>
+<p>We configure our app, telling it which PAC to use:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[app(
+    device = stm32f4xx_hal::pac,  
+    peripherals = true,           
+    dispatchers = [SPI1],         
+)]
+<span class="boring">}</span></code></pre></pre>
+<p>You might have noticed that we added an extra import from our HAL:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>gpio::{Output, PushPull, PA5},
+<span class="boring">}</span></code></pre></pre>
+<p>We need this when we are defining our resources:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[shared]
+struct Shared {}
+
+#[local]
+struct Local {
+    led: PA5&lt;Output&lt;PushPull&gt;&gt;, // LED pin
+    state: bool,                // LED state (ON/OFF)
+}
+<span class="boring">}</span></code></pre></pre>
+<p>As you can see, we use <code>output</code>, <code>PushPull</code> and <code>PA5</code> to define our LED pin and its state.</p>
+<p>Next, we need to define our init function, we start by naming our device peripherals dp:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[init] // Start-up function that initializes the program.
+    fn init(cx: init::Context) -&gt; (Shared, Local) {
+        // Assign context device peripherals to dp.
+        let dp = cx.device;
+    }
+<span class="boring">}</span></code></pre></pre>
+<p>Next we start our timer, synchronizing it to the system clock.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>Mono::start(cx.core.SYST, 8_000_000); // default STM32F401 clock-rate is 8MHz
+<span class="boring">}</span></code></pre></pre>
+<p>To make debugging easier, we initialize RTT, and print "init" to tell us that we initialized successfully.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>rtt_init_print!();
+rprintln!("init");
+<span class="boring">}</span></code></pre></pre>
+<p>We then set-up our LED pin, pretty similar to the blinky example right?</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>let gpioa = dp.GPIOA.split();
+let mut led = gpioa.pa5.into_push_pull_output();
+led.set_low();
+<span class="boring">}</span></code></pre></pre>
+<p>We spawn our blinker task (we will get to it!):</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>blink::spawn().ok();
+<span class="boring">}</span></code></pre></pre>
+<p>And finally we set the initial state of our resources:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>(
+    Shared {}, 
+    Local {
+        led, 
+        state: false 
+        })
+<span class="boring">}</span></code></pre></pre>
+<p>Now, what about that blinker?</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[task(local = [led, state])] // This task uses the local resources "led" and "state".
+    async fn blink(cx: blink::Context) { // Use context cx to access local and shared resources.
+        loop {
+            rprintln!("blink");
+            // Access local resources from context (cx.local)
+            if *cx.local.state {         // If LED is on.
+                cx.local.led.set_high();
+                *cx.local.state = false;
+            } else {                     // If LED is off
+                cx.local.led.set_low();
+                *cx.local.state = true;
+            }
+            // At the end of the task, wait 1000 ms (none-blocking).
+            Mono::delay(1000.millis()).await;
+        }
+    }
+<span class="boring">}</span></code></pre></pre>
+<p>We define our task using local resources, <code>led</code> and <code>state</code>:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[task(local = [led, state])] 
+<span class="boring">}</span></code></pre></pre>
+<p>We name our function and tell it to use context <code>cx</code>:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>    async fn blink(cx: blink::Context) {
+        (...)
+    }
+<span class="boring">}</span></code></pre></pre>
+<p>We implement our logic:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>loop {
+            rprintln!("blink");
+            // Access local resources from context (cx.local)
+            if *cx.local.state {         // If LED is on.
+                cx.local.led.set_high();
+                *cx.local.state = false;
+            } else {                     // If LED is off
+                cx.local.led.set_low();
+                *cx.local.state = true;
+            }
+            // At the end of the task, wait 1000 ms (none-blocking).
+            Mono::delay(1000.millis()).await;
+        }
+<span class="boring">}</span></code></pre></pre>
+<p>Notice at the end that we use a new type of delay: <code>Mono::delay(1000.millis()).await;</code>. What this delay does, is to schedule a new blink task in 1000ms, in the mean time it waits (<code>.await</code>), leaving the CPU free to perform other tasks.
+And that's it! Bobs your uncle.</p>
+<h2 id="complete-example-7"><a class="header" href="#complete-example-7">Complete Example</a></h2>
+<p>Here is a complete code example, it is the default example, and can be run with:</p>
+<pre><code class="language-sh">$ cargo embed --example rtic_blinky
+</code></pre>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// ####  SET-UP  ####
+// Compiler directives
+#![deny(unsafe_code)]
+#![no_main]
+#![no_std]
+
+
+// Imports
+// Debugger output for RTT
+use rtt_target::{rprintln, rtt_init_print};
+
+// Panic handler for RTT
+use panic_rtt_target as _;
+
+// RTIC
+use rtic::app;
+use rtic_monotonics::systick::prelude::*;
+
+// STM32F4 HAL
+use stm32f4xx_hal::{
+    pac::{self},
+    prelude::*,
+    gpio::{Output, PushPull, PA5},
+};
+
+
+// Set monotonic time to 1000 Hz, 1 ms resolution.
+systick_monotonic!(Mono, 1000);
+
+
+
+
+#[app(
+    device = stm32f4xx_hal::pac,  // This device uses the stm32f4xx_hal Peripheral Access Crate (PAC).
+    peripherals = true,           // Auto-initializes the Peripherals struct (dp).
+    dispatchers = [SPI1],         // Unused interrupts that RTIC can use internally for software tasks. 
+)]
+mod app {
+    // Import everything (*) from the parent module (rtic_blinky.rs)
+    use super::*;
+
+    // Resources
+    #[shared] // Shared between different tasks
+    struct Shared {}
+
+    #[local] // Task local data only
+    struct Local {
+        led: PA5&lt;Output&lt;PushPull&gt;&gt;, // LED pin
+        state: bool,                // LED state (ON/OFF)
+    }
+
+
+    #[init] // Start-up function that initializes the program.
+    fn init(cx: init::Context) -&gt; (Shared, Local) {
+        // Assign context device peripherals to dp.
+        let dp = cx.device;
+
+        // Initialize the systick interrupt &amp; obtain the token to prove that we did
+        Mono::start(cx.core.SYST, 8_000_000); // default STM32F401 clock-rate is 8MHz
+
+        // Report that the program successfully started.
+        rtt_init_print!();
+        rprintln!("init");
+
+        // Setup LED
+        let gpioa = dp.GPIOA.split();
+        let mut led = gpioa.pa5.into_push_pull_output();
+        led.set_low();
+
+        // Schedule the blinking task
+        blink::spawn().ok();
+
+        // Initialize resources
+        (Shared {}, Local { led, state: false })
+    }
+
+
+
+    // ####  TASKS  ####
+    #[task(local = [led, state])] // This task uses the local resources "led" and "state".
+    async fn blink(cx: blink::Context) { // Use context cx to access local and shared resources.
+        loop {
+            rprintln!("blink");
+            // Access local resources from context (cx.local)
+            if *cx.local.state {         // If LED is on.
+                cx.local.led.set_high();
+                *cx.local.state = false;
+            } else {                     // If LED is off
+                cx.local.led.set_low();
+                *cx.local.state = true;
+            }
+            // At the end of the task, wait 1000 ms (none-blocking).
+            Mono::delay(1000.millis()).await;
+        }
+    }
+}
+<span class="boring">}</span></code></pre></pre>
 
                     </main>
 

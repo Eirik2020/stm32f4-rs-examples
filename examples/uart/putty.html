@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Examples - Embedded Rust on the STM32F4 for dummies</title>
+        <title>Read and write UART on your PC using Putty - Embedded Rust on the STM32F4 for dummies</title>
 
 
         <!-- Custom HTML head -->
@@ -12,33 +12,33 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#ffffff">
 
-        <link rel="icon" href="favicon.svg">
-        <link rel="shortcut icon" href="favicon.png">
-        <link rel="stylesheet" href="css/variables.css">
-        <link rel="stylesheet" href="css/general.css">
-        <link rel="stylesheet" href="css/chrome.css">
-        <link rel="stylesheet" href="css/print.css" media="print">
+        <link rel="icon" href="../../favicon.svg">
+        <link rel="shortcut icon" href="../../favicon.png">
+        <link rel="stylesheet" href="../../css/variables.css">
+        <link rel="stylesheet" href="../../css/general.css">
+        <link rel="stylesheet" href="../../css/chrome.css">
+        <link rel="stylesheet" href="../../css/print.css" media="print">
 
         <!-- Fonts -->
-        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
-        <link rel="stylesheet" href="fonts/fonts.css">
+        <link rel="stylesheet" href="../../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../../fonts/fonts.css">
 
         <!-- Highlight.js Stylesheets -->
-        <link rel="stylesheet" id="highlight-css" href="highlight.css">
-        <link rel="stylesheet" id="tomorrow-night-css" href="tomorrow-night.css">
-        <link rel="stylesheet" id="ayu-highlight-css" href="ayu-highlight.css">
+        <link rel="stylesheet" id="highlight-css" href="../../highlight.css">
+        <link rel="stylesheet" id="tomorrow-night-css" href="../../tomorrow-night.css">
+        <link rel="stylesheet" id="ayu-highlight-css" href="../../ayu-highlight.css">
 
         <!-- Custom theme stylesheets -->
 
 
         <!-- Provide site root and default themes to javascript -->
         <script>
-            const path_to_root = "";
+            const path_to_root = "../../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc.js"></script>
+        <script src="../../toc.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -102,7 +102,7 @@
             <!-- populated by js -->
             <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
             <noscript>
-                <iframe class="sidebar-iframe-outer" src="toc.html"></iframe>
+                <iframe class="sidebar-iframe-outer" src="../../toc.html"></iframe>
             </noscript>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle">
                 <div class="sidebar-resize-indicator"></div>
@@ -137,7 +137,7 @@
                     <h1 class="menu-title">Embedded Rust on the STM32F4 for dummies</h1>
 
                     <div class="right-buttons">
-                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                        <a href="../../print.html" title="Print this book" aria-label="Print this book">
                             <i id="print-button" class="fa fa-print"></i>
                         </a>
 
@@ -166,24 +166,46 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="examples"><a class="header" href="#examples">Examples</a></h1>
-<p>Here is a list of examples to show how to do most basic stuff in embedded rust.</p>
-<p>These examples are available on my Github Repo, <code>stm32f4-rs-examples</code>, and can be cloned with:</p>
-<pre><code class="language-sh">git clone https://github.com/Eirik2020/stm32f4-rs-examples.git
-</code></pre>
-<p>Then opened with:</p>
-<pre><code class="language-sh">code stm32f4-rs-examples
-</code></pre>
-
+                        <h1 id="read-and-write-uart-on-your-pc-using-putty"><a class="header" href="#read-and-write-uart-on-your-pc-using-putty">Read and write UART on your PC using Putty</a></h1>
+<p>To read or write UART messages, we can use Putty. We first need to figure out which COM port our MCU is on, we can find this in the device manager under "COM &amp; LPT":</p>
+<figure>
+  <img src="../../images/device_manager.png" alt="Description" width="600">
+  <figcaption>Figure 2 - Device manager showing COM ports.</figcaption>
+</figure>
+<p>Next, we need to configure our serial connection in Putty, under Connection -&gt; Serial:</p>
+<figure>
+  <img src="../../images/putty_serial_setup.png" alt="Description" width="600">
+  <figcaption>Figure 2 - Putty serial settings.</figcaption>
+</figure>
+<ul>
+<li>Set "Serial line to connect to" to the COM port for your MCU, in my case COM6.</li>
+<li>Set "Speed" (baudrate) to 115200, the same we configured in our code.</li>
+<li>Set "Flow Control" to "None".</li>
+</ul>
+<p>Then, go to "Session" and select serial and press open.</p>
+<figure>
+  <img src="../../images/putty_serial_session.png" alt="Description" width="600">
+  <figcaption>Figure 2 - Starting a Putty serial session.</figcaption>
+</figure>
+<p>Assuming you have already flashed your MCU, you should be seeing these messages!</p>
+<figure>
+  <img src="../../images/putty_serial_messages.png" alt="Description" width="600">
+  <figcaption>Figure 2 - Putty serial settings.</figcaption>
+</figure>
+<p>To send messages, you can write in the terminal. If you want to see your writing, the MCU has to either echo the your letters, or you can enable "Force Echo" on putty, by going to Terminal -&gt; Local echo -&gt; "Force on":</p>
+<figure>
+  <img src="../../images/putty_echo.png" alt="Description" width="600">
+  <figcaption>Figure 2 - Enable force echo on Putty.</figcaption>
+</figure>
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="set_up.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../../examples/uart.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
 
-                            <a rel="next prefetch" href="examples/gpio.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../../examples/uart/uart_hello_world.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
 
@@ -193,11 +215,11 @@
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="set_up.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../../examples/uart.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
 
-                    <a rel="next prefetch" href="examples/gpio.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../../examples/uart/uart_hello_world.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
             </nav>
@@ -212,13 +234,13 @@
         </script>
 
 
-        <script src="elasticlunr.min.js"></script>
-        <script src="mark.min.js"></script>
-        <script src="searcher.js"></script>
+        <script src="../../elasticlunr.min.js"></script>
+        <script src="../../mark.min.js"></script>
+        <script src="../../searcher.js"></script>
 
-        <script src="clipboard.min.js"></script>
-        <script src="highlight.js"></script>
-        <script src="book.js"></script>
+        <script src="../../clipboard.min.js"></script>
+        <script src="../../highlight.js"></script>
+        <script src="../../book.js"></script>
 
         <!-- Custom JS scripts -->
 
