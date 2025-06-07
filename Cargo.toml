@@ -31,7 +31,9 @@ as5600 = "0.8.0"
 version = "0.22.1"
 features = ["stm32f401", "defmt"]
 
-
+[lib]
+path = "src/lib.rs"
+name = "library"
 
 # Set the default for dependencies.
 [profile.dev.package."*"]

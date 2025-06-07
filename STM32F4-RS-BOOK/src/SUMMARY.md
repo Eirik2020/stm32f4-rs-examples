@@ -12,5 +12,6 @@
         - [Read and write UART on your PC using Putty](./examples/uart/putty.md)
         - [Sending messages from the MCU](./examples/uart/uart_hello_world.md)
         - [Sending and receiving messages to your MCU](./examples/uart/uart_menu)
+    - [I2C](./examples/i2c.md)
     - [RTIC](./examples/rtic.md)
         - [Blinking a LED](./examples/rtic/rtic_LED.md)

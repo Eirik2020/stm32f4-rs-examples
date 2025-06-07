@@ -1,8 +1,37 @@
+# Using I2C
+Plain and simple, I2C is useful. This is not a guide on how I2C works, just show to read and write messages. 
+
+To use i2C, we need to import the module `I2c`:
+```rust
+use stm32f4xx_hal::{
+    pac::{self},
+    prelude::*,
+    i2c::I2c,
+};
+```
+
+Configuring up I2C is quite simple. We simply need to find two valid i2C pins, like `PB9` and `PB8`, which is connected to the peripheral `I2C1`. We configure this pins into alternate mode, with a open drain, letting our i2C peripheral set their mode:
+```rust
+let scl = gpiob.pb8.into_alternate().set_open_drain();
+    let sda = gpiob.pb9.into_alternate().set_open_drain();
+    let mut i2c = I2c::new(dp.I2C1, (scl, sda), 100.kHz(), &clocks);
+```
+
+To read from a sensor, we can use `.write_read`, which sends a message to the address specified (`AS5600_ADDR`), and reads the register `AS5600_RAW_ANGLE_REG`.
+```rust
+i2c.write_read(AS5600_ADDR, &[AS5600_RAW_ANGLE_REG], &mut buf).is_ok()
+```
 
 
 
 
+## Complete Example
+Here is a complete code example, it is the default example, and can be run with:
+```sh
+$ cargo embed --example i2c_as5600
+```
 
+```rust
 // ========================== Embedded Rust Set-up ==========================
 #![deny(unsafe_code)]
 #![no_main]
@@ -69,3 +98,4 @@ fn main() -> ! {
         cortex_m::asm::delay(200 * ms);
     }
 }
+```
