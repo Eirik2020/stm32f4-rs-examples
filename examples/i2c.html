@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>RTIC - Embedded Rust on the STM32F4 for dummies</title>
+        <title>I2C - Embedded Rust on the STM32F4 for dummies</title>
 
 
         <!-- Custom HTML head -->
@@ -166,171 +166,109 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="rtic"><a class="header" href="#rtic">RTIC</a></h1>
-<p>So far, we have only used blocking logic. Meaning, we only do one thing at a time. So for example when we blink our LED, we rush over to the light switch and flip it, then religiously wait for one second. Meaning we do nothing while we wait, which seems like a waste doesn't it?</p>
-<p>Well, RTIC is here to save the day! Now we can boost our productivity by 1000^10%! Think about all the things you could do while waiting, like cleaning your room <em>side-eye</em>.</p>
-<p>To use RTIC, we will need a couple more crates:</p>
+                        <h1 id="using-i2c"><a class="header" href="#using-i2c">Using I2C</a></h1>
+<p>Plain and simple, I2C is useful. This is not a guide on how I2C works, just show to read and write messages.</p>
+<p>To use i2C, we need to import the module <code>I2c</code>:</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use rtt_target::{rprintln, rtt_init_print};
-use panic_rtt_target as _;
-use rtic::app;
-use rtic_monotonics::systick::prelude::*;
+</span>use stm32f4xx_hal::{
+    pac::{self},
+    prelude::*,
+    i2c::I2c,
+};
 <span class="boring">}</span></code></pre></pre>
-<ul>
-<li><code>use rtt_target::{rprintln, rtt_init_print};</code> - Imports the Real-Time Transfer (RTT) interface.
-<ul>
-<li><code>rtt_init_print</code> - Print line macro that works of RTT.</li>
-<li><code>rprintln</code> - Used to initialize RTT.</li>
-</ul>
-</li>
-<li><code>use panic_rtt_target as _;</code> - Imports panic handler for RTT.</li>
-<li><code>use rtic::app;;</code> - Imports the RTIC app.</li>
-<li><code>use rtic_monotonics::systick::prelude::*;</code> - Imports monotonic timer.</li>
-</ul>
-<p>What is a monotonic timer? I am glad you asked! It it our reference used to schedule tasks and set delays. In the example below, we make a timer running at 1000 Hz, which equals about 1 ms resolution. Allowing us to schedule in milliseconds.</p>
+<p>Configuring up I2C is quite simple. We simply need to find two valid i2C pins, like <code>PB9</code> and <code>PB8</code>, which is connected to the peripheral <code>I2C1</code>. We configure this pins into alternate mode, with a open drain, letting our i2C peripheral set their mode:</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>systick_monotonic!(Mono, 1000); // 1000 Hz
+</span>let scl = gpiob.pb8.into_alternate().set_open_drain();
+    let sda = gpiob.pb9.into_alternate().set_open_drain();
+    let mut i2c = I2c::new(dp.I2C1, (scl, sda), 100.kHz(), &amp;clocks);
 <span class="boring">}</span></code></pre></pre>
-<p>Next, we will have a look at the structure of a RTIC app:</p>
+<p>To read from a sensor, we can use <code>.write_read</code>, which sends a message to the address specified (<code>AS5600_ADDR</code>), and reads the register <code>AS5600_RAW_ANGLE_REG</code>.</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>#[app(
-    device = stm32f4xx_hal::pac,  // This device uses the stm32f4xx_hal Peripheral Access Crate (PAC).
-    peripherals = true,           // Auto-initializes the Peripherals struct (dp).
-    dispatchers = [SPI1],         // Unused interrupts that RTIC can use internally for software tasks, in this case SPI1. 
-)]
-mod app {
-    // Import everything (*) from the parent module (rtic_blinky.rs)
-    use super::*;
-
-    // Resources
-    #[shared] // Shared between different tasks
-    struct Shared {}
-
-    #[local] // Task local data only
-    struct Local {}
+</span>i2c.write_read(AS5600_ADDR, &amp;[AS5600_RAW_ANGLE_REG], &amp;mut buf).is_ok()
+<span class="boring">}</span></code></pre></pre>
+<h2 id="complete-example"><a class="header" href="#complete-example">Complete Example</a></h2>
+<p>Here is a complete code example, it is the default example, and can be run with:</p>
+<pre><code class="language-sh">$ cargo embed --example i2c_as5600
+</code></pre>
+<pre><pre class="playground"><code class="language-rust">// ========================== Embedded Rust Set-up ==========================
+#![deny(unsafe_code)]
+#![no_main]
+#![no_std]
 
 
-    #[init] // Start-up function that initializes the program.
-    fn init(cx: init::Context) -&gt; (Shared, Local) {
-        (...)
-        (Shared {}, Local {})
-    }
-}
-<span class="boring">}</span></code></pre></pre>
-<p>The first part of our structure has the <code>#[app()]</code>. It contains the configuration for our RTIC app, like which device we are using (STM32F4), if we want to auto-initialize our peripherals (<code>peripherals</code>) and which interrupts (<code>SPI1</code>) are free for the app to use (<code>dispatchers</code>).</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span>#[app(
-    device = stm32f4xx_hal::pac,  
-    peripherals = true,           
-    dispatchers = [SPI1],         
-)]
-<span class="boring">}</span></code></pre></pre>
-<p>Next, we have the app body.</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span>mod app {
-    use super::*;
+// Imports
+use defmt::*;
+use defmt_rtt as _; // Global logger
+use panic_probe as _; // Panic handler with defmt support
+use cortex_m_rt::entry;
+use stm32f4xx_hal::{
+    pac::{self},
+    prelude::*,
+    i2c::I2c,
+};
 
-    #[shared]
-    struct Shared {}
 
-    #[local]
-    struct Local {}
+#[allow(non_snake_case)]
+#[allow(clippy::empty_loop)]
+#[entry]
+fn main() -&gt; ! {
+    // ========================== Set-up ==========================
+    // Take ownership of device peripherals and split out GPIO group A and B
+    let dp = pac::Peripherals::take().unwrap();
+    let gpiob = dp.GPIOB.split();
 
-    #[init] 
-    fn init(cx: init::Context) -&gt; (Shared, Local) {
-        (...)
-        (Shared {}, Local {})
-    }
-}
-<span class="boring">}</span></code></pre></pre>
-<p>The first line <code>use super::*;</code>, simply brings all (<code>*</code>) the imports from the module (<code>your_code.rs</code>) into the app.</p>
-<p>Next, we have the resources avaiable in the app, think variables, data structures etc.</p>
-<ul>
-<li>The shared struct (<code>struct Shared {}</code>), contains resources shared between tasks, like sensor readings.</li>
-<li>The local struct (<code>struct Local {}</code>), contains local data only used within a task, and is NOT shared between structs.</li>
-</ul>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span>#[shared]
-struct Shared {}
+    // Configure clocks
+    let rcc = dp.RCC.constrain();
+    let clocks = rcc.cfgr.freeze();
 
-#[local]
-struct Local {}
-<span class="boring">}</span></code></pre></pre>
-<p>Lastly we have the <code>init</code> function. This functions initializes our program and kicks it off. We need it since we don't have a main loop anymore.</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span>#[init] 
-fn init(cx: init::Context) -&gt; (Shared, Local) {
-    (...)
-    (Shared {}, Local {})
-}
-<span class="boring">}</span></code></pre></pre>
-<p>The <code>init</code> function takes our <code>Local</code> and <code>Shared</code> struct, and puts it into the context struct <code>cx</code>.<br />
-It also allows us to initialize our resources:</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span>(Shared {}, Local {})
-<span class="boring">}</span></code></pre></pre>
-<p>In addition, we have tasks <code>#[task()]</code>. We use these to perform actions, like blinking a LED, reading a UART message or setting the duty cycle for PWM.
-A task may look like this:</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span> #[task(local = [led, state])] // This task uses the local resources "led" and "state".
-    async fn blink(cx: blink::Context) { // Use context cx to access local and shared resources.
-        loop {
-            rprintln!("blink");
-            // Access local resources from context (cx.local)
-            if *cx.local.state {         // If LED is on.
-                cx.local.led.set_high();
-                *cx.local.state = false;
-            } else {                     // If LED is off
-                cx.local.led.set_low();
-                *cx.local.state = true;
-            }
-            // At the end of the task, wait 1000 ms (none-blocking).
-            Mono::delay(1000.millis()).await;
+   // ========================== Constants ==========================
+    const AS5600_ADDR: u8 = 0x36;       // 7-bit I2C address
+    const AS5600_RAW_ANGLE_REG: u8 = 0x0C; // MSB of raw angle
+    let ms: u32 = 8_000; // clock cycles to millisecond conversion.
+    let raw2deg: f32 = 360.0 / 4096.0;
+    let mut ang_rotor_deg: f32 = 0.0;
+    let mut ang_rotor_raw: u16 = 0;
+
+    // ========================= I2C Setup ==========================
+    let scl = gpiob.pb8.into_alternate().set_open_drain();
+    let sda = gpiob.pb9.into_alternate().set_open_drain();
+    let mut i2c = I2c::new(dp.I2C1, (scl, sda), 100.kHz(), &amp;clocks);
+
+
+    // ========================== Main Loop ==========================
+    loop {
+        // Read Motor Position
+        let mut buf = [0u8; 2];
+        if i2c.write_read(AS5600_ADDR, &amp;[AS5600_RAW_ANGLE_REG], &amp;mut buf).is_ok() {
+            ang_rotor_raw = ((buf[0] as u16) &lt;&lt; 8) | (buf[1] as u16);
         }
+        else {
+            warn!("I2C read failed");
+        }
+
+        // Convert to degrees
+        ang_rotor_deg = (ang_rotor_raw as f32) * raw2deg;
+        
+        // Send Position over defmt
+        info!("Rotor position = {}", ang_rotor_deg);
+
+        // Wait 500ms
+        cortex_m::asm::delay(200 * ms);
     }
-<span class="boring">}</span></code></pre></pre>
-<ul>
-<li><code>#[task(local = [led, state])]</code> - Here the task uses the <code>led</code> and <code>state</code> resources from the local resources struct <code>Local</code>.</li>
-<li><code>#async fn blink(cx: blink::Context)</code> - We declare it as a async function (always required in RTIC V2), and access the resources and peripherals through context(<code>cx</code>).</li>
-</ul>
-<p>The loop operates similarlly as we have done before, but we now access the LED and its state through the <code>cx.local</code> struct.</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span>loop {
-    rprintln!("blink");
-    // Access local resources from context (cx.local)
-    if *cx.local.state {         // If LED is on.
-        cx.local.led.set_high();
-        *cx.local.state = false;
-        ...
-    }
-}
-<span class="boring">}</span></code></pre></pre>
-<p>Finally at the end, we make use of our monotonic timer:</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span>Mono::delay(1000.millis()).await;
-<span class="boring">}</span></code></pre></pre>
-<p>As opposed to our old delay, this delay will not block the CPU, allowing it to do other tasks in the background while the <code>blink</code> task is waiting.</p>
+}</code></pre></pre>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../examples/i2c.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../examples/uart/uart_menu.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
 
-                            <a rel="next prefetch" href="../examples/rtic/rtic_LED.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../examples/rtic.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
 
@@ -340,11 +278,11 @@ A task may look like this:</p>
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../examples/i2c.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../examples/uart/uart_menu.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
 
-                    <a rel="next prefetch" href="../examples/rtic/rtic_LED.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../examples/rtic.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
             </nav>
